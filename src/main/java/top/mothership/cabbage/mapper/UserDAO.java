@@ -20,7 +20,7 @@ public interface UserDAO {
      * @return the user
      */
     @Select("<script>" +
-            "SELECT * FROM `userrole` " +
+            "SELECT * FROM `user` " +
             "<choose>" +
             "<when test=\"qq != null\">" +
             "WHERE `qq` = #{qq}" +
@@ -41,12 +41,13 @@ public interface UserDAO {
     /**
      * List user id by role list.
      *
-     * @param role the role
+     * @param role     the role
+     * @param unbanned the unbanned
      * @return the list
      */
 //加入分隔符处理，在中间的，开头的，结尾的，只有这一个用户组的
     @Select("<script>"
-            + "SELECT `user_id` FROM `userrole` "
+            + "SELECT `user_id` FROM `user` "
             + "<where>"
             + "<if test=\"role != null\">"
             + "(`role` LIKE CONCAT('%,',#{role},',%') "
@@ -61,14 +62,15 @@ public interface UserDAO {
 
     /**
      * List user id by uname list.
-     *改为Gson序列化，只需考虑在中间的问题，同时加入分隔符
+     * 改为Gson序列化，只需考虑在中间的问题，同时加入分隔符
      * 2018-3-12 16:26:59改为模糊查询
      * 2018-3-16 13:29:44没必要用动态sql吧？试试改为多个字段查询
      * 2018-3-21 12:13:29直接用OR字段搜user_id=用户名时会返回几百个结果，搜索了一下改为现在的查询
+     *
      * @param keyword 搜索关键字
      * @return the list
      */
-    @Select("SELECT * FROM `userrole` "
+    @Select("SELECT * FROM `user` "
             + "WHERE concat( `user_id` ,',', `qq` ,',', `legacy_uname`,',', `current_uname`) LIKE CONCAT('%',#{keyword},'%')")
     @Results(
             {
@@ -77,7 +79,12 @@ public interface UserDAO {
             })
     List<User> searchUser(@Param("keyword") String keyword);
 
-    @Select("SELECT * FROM `userrole` "
+    /**
+     * List banned user list.
+     *
+     * @return the list
+     */
+    @Select("SELECT * FROM `user` "
             + "WHERE `is_banned` =1 ")
     @Results(
             {
@@ -85,6 +92,7 @@ public interface UserDAO {
                     @Result(column = "is_banned", property = "banned")
             })
     List<User> listBannedUser();
+
     /**
      * Gets repeat star.
      * 去掉100%复读的
@@ -96,17 +104,17 @@ public interface UserDAO {
                     //手动绑定这个字段
                     @Result(column = "is_banned", property = "banned")
             })
-    @Select("SELECT * FROM `userrole` WHERE `speaking_count` >10 order by `repeat_count`/`speaking_count` desc limit 1")
+    @Select("SELECT * FROM `user` WHERE `speaking_count` >10 order by `repeat_count`/`speaking_count` desc limit 1")
     User getRepeatStar();
 
     /**
      * Update user integer.
      * 由于采用动态SQL，QQ只能是0不能是null
+     *
      * @param user the user
      * @return the integer
      */
-
-    @Update("<script>" + "update `userrole`"
+    @Update("<script>" + "update `user`"
             + "<set>"
             + "<if test=\"user.role != null\">role=#{user.role},</if>"
             + "<if test=\"user.qq != null\">qq=#{user.qq},</if>"
@@ -126,7 +134,7 @@ public interface UserDAO {
      * @param user the user
      * @return the integer
      */
-    @Insert("INSERT INTO `userrole` VALUES (null,#{user.userId},#{user.role},#{user.qq}" +
+    @Insert("INSERT INTO `user` VALUES (null,#{user.userId},#{user.role},#{user.qq}" +
             ",#{user.legacyUname},#{user.currentUname},#{user.banned},#{user.repeatCount},#{user.speakingCount},#{user.mode})")
     Integer addUser(@Param("user") User user);
 

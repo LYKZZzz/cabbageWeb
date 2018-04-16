@@ -20,9 +20,9 @@ public class RegularPattern {
     public final static Pattern SLEEP_REGEX = Pattern.compile("^[!！]\\s*([^#:： ]*)\\s*(.*)");
 
     /**
-     * 匹配出sudo命令
+     * mp系列命令和sudo系列命令一样
      */
-    public final static Pattern ADMIN_CMD_REGEX = Pattern.compile("[!！]\\s*sudo\\s+([^#:： ]*)\\s*(.*)");
+    public final static Pattern DOUBLE_COMMAND_REGEX = Pattern.compile("[!！]\\s*([^#:： ]*)\\s*([^#:： ]*)\\s*(.*)");
     /**
      * 复读禁言时抗干扰的匹配表达式
      */
@@ -43,14 +43,7 @@ public class RegularPattern {
      * 贼他妈弱智
      */
     public final static Pattern QIANESE_RECENT = Pattern.compile("((?:4|5|t|f|d|e|r)(?:1|q|w|3|e|r|4|d)(?:x|d|f|v|c)(?:1|q|w|3|e|r|4)(?:b|h|j|m|n)(?:r|5|6|y|g|f|t))");
-    /**
-     * 指定需要以文本方式返回的子命令
-     */
-    public final static Pattern TEXT_VERSION_COMMAND = Pattern.compile("rs|bps|bpus|bpmes|mybps");
-    /**
-     * 赛事分析系统中用来处理bid
-     */
-    public final static Pattern ANALYZE_BID_PARAM = Pattern.compile("[!！]([^ ]*)[ ]?(\\d*)");
+
     /**
      * 匹配osu的UID（1-8个数字）
      */
@@ -65,6 +58,7 @@ public class RegularPattern {
      */
     public final static Pattern QQ = Pattern.compile("^(\\d{3,10})$");
     public final static Pattern BPNUM = Pattern.compile("^(\\d{1,3})$");
+    public final static Pattern DAY = Pattern.compile("^(\\d{1,4})$");
     public final static Pattern URL = Pattern.compile("(https?|ftp|file)://[-A-Za-z0-9+&@#/%?=~_|!:,.;]+[-A-Za-z0-9+&@#/%=~_|]");
 
 }

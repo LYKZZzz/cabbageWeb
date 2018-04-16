@@ -1,4 +1,4 @@
-package top.mothership.cabbage.interceptors;
+package top.mothership.cabbage.interceptor;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;

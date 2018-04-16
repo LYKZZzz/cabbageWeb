@@ -7,12 +7,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import top.mothership.cabbage.manager.ApiManager;
+import top.mothership.cabbage.manager.OsuApiManager;
+import top.mothership.cabbage.mapper.PlayerInfoDAO;
 import top.mothership.cabbage.mapper.RedisDAO;
 import top.mothership.cabbage.mapper.UserDAO;
-import top.mothership.cabbage.mapper.UserInfoDAO;
 import top.mothership.cabbage.pojo.User;
-import top.mothership.cabbage.pojo.osu.Userinfo;
+import top.mothership.cabbage.pojo.osu.PlayerInfo;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -23,26 +23,26 @@ import java.util.List;
 
 @Component
 public class UserUtil {
-    private final UserInfoDAO userInfoDAO;
+    private final PlayerInfoDAO userInfoDAO;
     private final UserDAO userDAO;
-    private final ApiManager apiManager;
+    private final OsuApiManager osuApiManager;
     private final RedisDAO redisDAO;
     private Logger logger = LogManager.getLogger(this.getClass());
 
     @Autowired
-    public UserUtil(UserInfoDAO userInfoDAO, UserDAO userDAO, ApiManager apiManager, RedisDAO redisDAO) {
+    public UserUtil(PlayerInfoDAO userInfoDAO, UserDAO userDAO, OsuApiManager osuApiManager, RedisDAO redisDAO) {
         this.userInfoDAO = userInfoDAO;
         this.userDAO = userDAO;
-        this.apiManager = apiManager;
+        this.osuApiManager = osuApiManager;
         this.redisDAO = redisDAO;
     }
 
 
     public User registerUser(Integer userId, Integer mode, Long QQ, String role) {
         //构造User对象写入数据库，如果指定了mode就使用指定mode
-        Userinfo userFromAPI = null;
+        PlayerInfo userFromAPI = null;
         for (int i = 0; i < 4; i++) {
-            userFromAPI = apiManager.getUser(i, userId);
+            userFromAPI = osuApiManager.getUser(i, userId);
             if (LocalTime.now().isAfter(LocalTime.of(4, 0))) {
                 userFromAPI.setQueryDate(LocalDate.now());
             } else {
@@ -60,7 +60,7 @@ public class UserUtil {
 
     public List<String> sortRoles(String role) {
         List<String> roles = Arrays.asList(role.split(","));
-        //此处自定义实现排序方法
+        //此处自定义实现排序
         //dev>分群>主群>比赛
         roles.sort((o1, o2) -> {
 //            mp5s优先级得低于mp5和各个分部，考虑到比赛选手刷超了超过mp4的，也得低于mp4

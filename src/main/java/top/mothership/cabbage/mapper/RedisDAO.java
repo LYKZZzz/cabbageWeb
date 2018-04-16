@@ -5,7 +5,7 @@ import com.google.gson.Gson;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
-import top.mothership.cabbage.pojo.osu.Userinfo;
+import top.mothership.cabbage.pojo.osu.PlayerInfo;
 
 import java.util.concurrent.TimeUnit;
 
@@ -22,7 +22,7 @@ public class RedisDAO {
         this.redisTemplate = redisTemplate;
     }
 
-    public void add(Integer userId, Userinfo userinfo) {
+    public void add(Integer userId, PlayerInfo userinfo) {
         redisTemplate.opsForHash().put(String.valueOf(userId), String.valueOf(userinfo.getMode()), new Gson().toJson(userinfo));
     }
 
@@ -34,8 +34,8 @@ public class RedisDAO {
         redisTemplate.opsForValue().set(key, value, timeout, timeUnit);
     }
 
-    public Userinfo get(Integer userId, Integer mode) {
-        return new Gson().fromJson((String) redisTemplate.opsForHash().get(String.valueOf(userId), String.valueOf(mode)), Userinfo.class);
+    public PlayerInfo get(Integer userId, Integer mode) {
+        return new Gson().fromJson((String) redisTemplate.opsForHash().get(String.valueOf(userId), String.valueOf(mode)), PlayerInfo.class);
     }
 
     public String get(String key) {

@@ -1,10 +1,11 @@
-package top.mothership.cabbage.serviceImpl;
+package top.mothership.cabbage.service;
 
 import com.google.gson.GsonBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import top.mothership.cabbage.annotation.UserAuthorityControl;
 import top.mothership.cabbage.manager.CqManager;
 import top.mothership.cabbage.pojo.coolq.CqMsg;
 
@@ -26,6 +27,7 @@ public class ShadowSocksCmdServiceImpl {
         this.cqManager = cqManager;
     }
 
+    @UserAuthorityControl(value = {1335734657L, 450463033L})
     public void service(CqMsg cqMsg) {
         if ("getcode".equals(cqMsg.getArgument().getSubCommandLowCase()))
             cqMsg.getArgument().setSubCommandLowCase("code");

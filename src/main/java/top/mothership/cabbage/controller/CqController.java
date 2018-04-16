@@ -7,14 +7,16 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
-import top.mothership.cabbage.consts.ParameterEnum;
+import top.mothership.cabbage.enums.CommandIdentifier;
+import top.mothership.cabbage.enums.MessageSource;
+import top.mothership.cabbage.factory.CommandHandlerFactory;
 import top.mothership.cabbage.manager.CqManager;
 import top.mothership.cabbage.manager.DayLilyManager;
 import top.mothership.cabbage.pattern.CQCodePattern;
-import top.mothership.cabbage.pattern.MpCommandPattern;
 import top.mothership.cabbage.pattern.RegularPattern;
+import top.mothership.cabbage.pojo.coolq.Argument;
 import top.mothership.cabbage.pojo.coolq.CqMsg;
-import top.mothership.cabbage.serviceImpl.*;
+import top.mothership.cabbage.service.*;
 import top.mothership.cabbage.util.qq.SmokeUtil;
 
 import javax.annotation.PostConstruct;
@@ -29,7 +31,6 @@ import java.util.regex.Matcher;
 @RestController
 public class CqController {
 
-
     private final CqServiceImpl cqService;
     private final SmokeUtil smokeUtil;
     private final CqAdminServiceImpl cqAdminService;
@@ -43,8 +44,9 @@ public class CqController {
 
     /**
      * Spring构造方法自动注入
-     *  @param cqService      Service层
-     * @param smokeUtil      负责禁言的工具类
+     *
+     * @param cqService             Service层
+     * @param smokeUtil             负责禁言的工具类
      * @param cqAdminService
      * @param mpService
      * @param cqManager
@@ -72,6 +74,9 @@ public class CqController {
      */
     @RequestMapping(value = "/cqAPI", method = RequestMethod.POST, produces = "application/json;charset=UTF-8")
     public void cqMsgParse(@RequestBody CqMsg cqMsg) throws Exception {
+        Argument argument = new Argument();
+        //标记为QQ消息
+        argument.setMessageSource(MessageSource.QQ);
         //待整理业务逻辑
         switch (cqMsg.getPostType()) {
             case "message":
@@ -90,7 +95,6 @@ public class CqController {
                     msgWithoutImage = msg;
                 }
                 //识别消息类型，根据是否是群聊，加入禁言消息队列
-                Matcher cmdMatcher = RegularPattern.REG_CMD_REGEX.matcher(msgWithoutImage);
                 switch (cqMsg.getMessageType()) {
                     case "group":
                         smokeUtil.parseSmoke(cqMsg);
@@ -98,379 +102,50 @@ public class CqController {
                     default:
                         break;
                 }
+
+                Matcher cmdMatcher = RegularPattern.REG_CMD_REGEX.matcher(msgWithoutImage);
+
                 if (cmdMatcher.find()) {
                     //如果检测到命令，直接把消息中的图片去掉，避免Service层进行后续处理
-                    cqMsg.setMessage(msgWithoutImage);
-                    String log = "";
-                    switch (cqMsg.getMessageType()) {
-                        case "group":
-                            log += "群" + cqMsg.getGroupId() + "成员" + cqMsg.getUserId() + "发送了命令" + cqMsg.getMessage();
-                            break;
-                        case "discuss":
-                            log += "讨论组" + cqMsg.getDiscussId() + "成员" + cqMsg.getUserId() + "发送了命令" + cqMsg.getMessage();
-                            break;
-                        case "private":
-                            log += "用户" + cqMsg.getUserId() + "发送了命令" + cqMsg.getMessage();
-                            break;
-                        default:
-                            break;
-                    }
-                    logger.info(log);
-
+                    //2018-4-13 15:43:49改为设置Argument参数
+                    argument.setRawMessage(msgWithoutImage);
                     switch (cmdMatcher.group(1).toLowerCase(Locale.CHINA)) {
                         //处理命令
                         case "sudo":
-                            cmdMatcher = RegularPattern.ADMIN_CMD_REGEX.matcher(msg);
-
-                            if(!cmdMatcher.find()){return;}
-                            //无视命令大小写
-                            switch (cmdMatcher.group(1).toLowerCase(Locale.CHINA)) {
-                                case "add":
-                                    cqMsg.setRequired(new ParameterEnum[]{ParameterEnum.USERNAME_LIST, ParameterEnum.ROLE});
-                                    cqAdminService.addUserRole(cqMsg);
-                                    break;
-                                case "del":
-                                    cqMsg.setRequired(new ParameterEnum[]{ParameterEnum.USERNAME_LIST});
-                                    cqMsg.setOptional(new ParameterEnum[]{ParameterEnum.ROLE});
-                                    cqAdminService.delUserRole(cqMsg);
-                                    break;
-                                case "bg":
-                                    cqMsg.setRequired(new ParameterEnum[]{ParameterEnum.FILENAME, ParameterEnum.URL});
-                                    cqAdminService.addComponent(cqMsg);
-                                    break;
-                                case "recent":
-                                case "rs":
-                                    cqMsg.setRequired(new ParameterEnum[]{ParameterEnum.USERNAME});
-                                    cqMsg.setOptional(new ParameterEnum[]{ParameterEnum.MODE});
-                                    cqAdminService.recent(cqMsg);
-                                    break;
-                                case "afk":
-                                    cqMsg.setOptional(new ParameterEnum[]{ParameterEnum.DAY, ParameterEnum.ROLE});
-                                    cqAdminService.checkAfkPlayer(cqMsg);
-                                    break;
-                                case "smoke":
-                                    cqMsg.setRequired(new ParameterEnum[]{ParameterEnum.AT});
-                                    cqMsg.setOptional(new ParameterEnum[]{ParameterEnum.SECOND});
-                                    cqAdminService.smoke(cqMsg);
-                                    break;
-                                case "listinvite":
-                                    cqAdminService.listInvite(cqMsg);
-                                    break;
-                                case "handleinvite":
-                                    cqMsg.setRequired(new ParameterEnum[]{ParameterEnum.FLAG});
-                                    cqAdminService.handleInvite(cqMsg);
-                                    break;
-                                case "clearinvite":
-                                    CqAdminServiceImpl.request.clear();
-                                    cqMsg.setMessage("清除列表成功");
-                                    cqManager.sendMsg(cqMsg);
-                                    return;
-                                case "钦点":
-                                    cqMsg.setRequired(new ParameterEnum[]{ParameterEnum.USERNAME});
-                                    cqMsg.setOptional(new ParameterEnum[]{ParameterEnum.QQ, ParameterEnum.ROLE});
-                                    cqAdminService.appoint(cqMsg);
-                                    break;
-                                case "fp":
-                                    cqMsg.setRequired(new ParameterEnum[]{ParameterEnum.SEARCH_PARAM});
-                                    cqAdminService.firstPlace(cqMsg);
-                                    break;
-                                case "listmsg":
-                                    cqMsg.setRequired(new ParameterEnum[]{ParameterEnum.AT});
-                                    cqAdminService.listMsg(cqMsg);
-                                    break;
-                                case "searchplayer":
-                                    cqMsg.setRequired(new ParameterEnum[]{ParameterEnum.USERNAME});
-                                    cqAdminService.searchPlayer(cqMsg);
-                                    break;
-                                case "groupinfo":
-                                    cqMsg.setOptional(new ParameterEnum[]{ParameterEnum.GROUPID});
-                                    cqAdminService.groupInfo(cqMsg);
-                                    break;
-                                case "help":
-                                    cqAdminService.help(cqMsg);
-                                    break;
-                                case "repeatstar":
-                                    cqAdminService.getRepeatStar(cqMsg);
-                                    break;
-                                case "roleinfo":
-                                    cqMsg.setRequired(new ParameterEnum[]{ParameterEnum.ROLE});
-                                    cqAdminService.roleInfo(cqMsg);
-                                    break;
-                                case "unbind":
-                                    cqMsg.setRequired(new ParameterEnum[]{ParameterEnum.QQ});
-                                    cqAdminService.unbind(cqMsg);
-                                    break;
-                                case "score":
-                                    cqMsg.setRequired(new ParameterEnum[]{ParameterEnum.USERNAME, ParameterEnum.BEATMAP_ID});
-                                    cqMsg.setOptional(new ParameterEnum[]{ParameterEnum.MODE});
-                                    cqAdminService.score(cqMsg);
-                                default:
-                                    break;
-                            }
-                            break;
                         case "mp":
-                            cmdMatcher = MpCommandPattern.MP_CMD_REGEX.matcher(msg);
+                            //这些命令需要换一个正则表达式
+                            cmdMatcher = RegularPattern.DOUBLE_COMMAND_REGEX.matcher(msg);
+                            //执行一次find
                             cmdMatcher.find();
-                            switch (cmdMatcher.group(1).toLowerCase(Locale.CHINA)) {
-                                case "rs":
-                                    //rs命令必须指定开始时间
-                                    if ("".equals(cmdMatcher.group(2))) {
-                                        return;
-                                    }
-                                case "make":
-                                    mpService.reserveLobby(cqMsg);
-                                    break;
-                                case "invite":
-                                    if ("".equals(cmdMatcher.group(2))) {
-                                        return;
-                                    }
-                                    mpService.invitePlayer(cqMsg);
-                                    break;
-                                case "list":
-                                    mpService.listLobby(cqMsg);
-                                    break;
-                                case "abort":
-                                    mpService.abortReserve(cqMsg);
-                                    break;
-                                case "join":
-                                    mpService.joinLobby(cqMsg);
-                                    break;
-                                case "add":
-                                    mpService.addMap(cqMsg);
-                                    break;
-                                case "del":
-                                    mpService.delMap(cqMsg);
-                                    break;
-                                case "listmap":
-                                    mpService.listMap(cqMsg);
-                                    break;
-                                case "help":
-                                    mpService.help(cqMsg);
-                                default:
-                                    break;
+                            //查找有没有命令处理器
+                            if (CommandIdentifier.contains(
+                                    (cmdMatcher.group(1) + "_" + cmdMatcher.group(2)).toUpperCase())) {
+                                CommandHandler ch =
+                                        CommandHandlerFactory.build(
+                                                CommandIdentifier.valueOf((cmdMatcher.group(1) + "_" + cmdMatcher.group(2)).toUpperCase()));
+                                ch.doService(argument);
                             }
                             break;
                         default:
                             Matcher recentQianeseMatcher = RegularPattern.QIANESE_RECENT.matcher(cmdMatcher.group(1).toLowerCase(Locale.CHINA));
                             if (recentQianeseMatcher.find()) {
-                                cqMsg.setOptional(new ParameterEnum[]{ParameterEnum.MODE});
-                                cqService.recent(cqMsg);
+                                CommandHandler ch = CommandHandlerFactory.build(CommandIdentifier.RECENT);
+                                ch.doService(argument);
+                            } else {
+                                //检测白菜是否能处理这条命令
+                                if (CommandIdentifier.contains(cmdMatcher.group(1).toUpperCase())) {
+                                    CommandHandler ch = CommandHandlerFactory.build(
+                                            CommandIdentifier.valueOf(cmdMatcher.group(1).toUpperCase()));
+                                    ch.doService(argument);
+                                } else {
+                                    //如果找不到对应的处理方法
+                                    Matcher sleepMatcher = RegularPattern.SLEEP_REGEX.matcher(msgWithoutImage);
+                                    if (sleepMatcher.find()) {
+                                        //sleep专用正则，感叹号前面加东西不工作
+                                        dayLilyManager.sendMsg(cqMsg);
+                                    }
+                                }
                             }
-                            switch (cmdMatcher.group(1).toLowerCase(Locale.CHINA)) {
-                                case "stat":
-                                    cqMsg.setRequired(new ParameterEnum[]{ParameterEnum.USERNAME});
-                                    cqMsg.setOptional(new ParameterEnum[]{ParameterEnum.DAY, ParameterEnum.MODE});
-                                    cqService.statUserInfo(cqMsg);
-                                    break;
-                                case "statu":
-                                    cqMsg.setRequired(new ParameterEnum[]{ParameterEnum.USER_ID});
-                                    cqMsg.setOptional(new ParameterEnum[]{ParameterEnum.DAY, ParameterEnum.MODE});
-                                    cqService.statUserInfo(cqMsg);
-                                    break;
-                                case "statme":
-                                    cqMsg.setOptional(new ParameterEnum[]{ParameterEnum.DAY, ParameterEnum.MODE});
-                                    cqService.statUserInfo(cqMsg);
-                                    break;
-                                case "bp":
-                                    cqMsg.setRequired(new ParameterEnum[]{ParameterEnum.USERNAME});
-                                    cqMsg.setOptional(new ParameterEnum[]{ParameterEnum.NUM, ParameterEnum.MODE});
-                                    cqService.pretreatmentParameterForBPCommand(cqMsg);
-                                    if (cqMsg.getArgument() == null) {
-                                        //在BP的参数错误情况下，会直接返回到Controller中，此时没有Argument会触发NPE
-                                        return;
-                                    }
-                                    if (cqMsg.getArgument().getNum() != null) {
-                                        //如果有指定#n
-                                        //如果Service内部调用，AOP无法拦截
-                                        cqService.printSpecifiedBP(cqMsg);
-                                    } else {
-                                        cqService.printBP(cqMsg);
-                                    }
-                                    break;
-                                case "bpu":
-                                    cqMsg.setRequired(new ParameterEnum[]{ParameterEnum.USER_ID});
-                                    cqMsg.setOptional(new ParameterEnum[]{ParameterEnum.NUM, ParameterEnum.MODE});
-                                    cqService.pretreatmentParameterForBPCommand(cqMsg);
-                                    if (cqMsg.getArgument() == null) {
-                                        //在BP的参数错误情况下，会直接返回到Controller中，此时没有Argument会触发NPE
-                                        return;
-                                    }
-                                    if (cqMsg.getArgument().getNum() != null) {
-                                        //如果有指定#n
-                                        //如果Service内部调用，AOP无法拦截
-                                        cqService.printSpecifiedBP(cqMsg);
-                                    } else {
-                                        cqService.printBP(cqMsg);
-                                    }
-                                    break;
-                                case "bps":
-                                    cqMsg.setRequired(new ParameterEnum[]{ParameterEnum.USERNAME});
-                                    cqMsg.setOptional(new ParameterEnum[]{ParameterEnum.NUM, ParameterEnum.MODE});
-                                    cqService.pretreatmentParameterForBPCommand(cqMsg);
-                                    if (cqMsg.getArgument() == null) {
-                                        //在BP的参数错误情况下，会直接返回到Controller中，此时没有Argument会触发NPE
-                                        return;
-                                    }
-                                    if (cqMsg.getArgument().getNum() != null) {
-                                        //如果有指定#n
-                                        //如果Service内部调用，AOP无法拦截
-                                        cqService.printSpecifiedBP(cqMsg);
-                                    } else {
-                                        cqService.printBP(cqMsg);
-                                    }
-                                    break;
-                                case "bpus":
-                                    cqMsg.setRequired(new ParameterEnum[]{ParameterEnum.USER_ID});
-                                    cqMsg.setOptional(new ParameterEnum[]{ParameterEnum.NUM, ParameterEnum.MODE});
-                                    cqService.pretreatmentParameterForBPCommand(cqMsg);
-                                    if (cqMsg.getArgument() == null) {
-                                        //在BP的参数错误情况下，会直接返回到Controller中，此时没有Argument会触发NPE
-                                        return;
-                                    }
-                                    if (cqMsg.getArgument().getNum() != null) {
-                                        //如果有指定#n
-                                        //如果Service内部调用，AOP无法拦截
-                                        cqService.printSpecifiedBP(cqMsg);
-                                    } else {
-                                        cqService.printBP(cqMsg);
-                                    }
-                                    break;
-                                case "bpme":
-                                case "mybp":
-                                case "mybps":
-                                case "bpmes":
-                                    cqMsg.setOptional(new ParameterEnum[]{ParameterEnum.NUM, ParameterEnum.MODE});
-                                    cqService.pretreatmentParameterForBPCommand(cqMsg);
-                                    if (cqMsg.getArgument() == null) {
-                                        //在BP的参数错误情况下，会直接返回到Controller中，此时没有Argument会触发NPE
-                                        return;
-                                    }
-                                    if (cqMsg.getArgument().getNum() != null) {
-                                        //如果有指定#n
-                                        //如果Service内部调用，AOP无法拦截
-                                        cqService.printSpecifiedBP(cqMsg);
-                                    } else {
-                                        cqService.printBP(cqMsg);
-                                    }
-                                    break;
-                                case "setid":
-                                    cqMsg.setRequired(new ParameterEnum[]{ParameterEnum.USERNAME});
-                                    cqMsg.setOptional(new ParameterEnum[]{ParameterEnum.MODE});
-                                    cqService.setId(cqMsg);
-                                    break;
-                                case "rs":
-                                    cqMsg.setOptional(new ParameterEnum[]{ParameterEnum.MODE});
-                                    cqService.recent(cqMsg);
-                                    break;
-                                case "help":
-                                    cqService.help(cqMsg);
-                                    break;
-                                case "sleep":
-                                    cqMsg.setOptional(new ParameterEnum[]{ParameterEnum.HOUR});
-                                    cqService.sleep(cqMsg);
-                                    break;
-                                case "add":
-                                    cqMsg.setRequired(new ParameterEnum[]{ParameterEnum.USERNAME, ParameterEnum.QQ});
-                                    cqService.chartMemberCmd(cqMsg);
-                                    break;
-                                case "del":
-                                    cqMsg.setRequired(new ParameterEnum[]{ParameterEnum.USERNAME});
-                                    cqService.chartMemberCmd(cqMsg);
-                                    break;
-                                case "me":
-                                    cqMsg.setRequired(new ParameterEnum[]{ParameterEnum.SEARCH_PARAM});
-                                    cqService.myScore(cqMsg);
-                                    break;
-                                case "search":
-                                    cqMsg.setRequired(new ParameterEnum[]{ParameterEnum.SEARCH_PARAM});
-                                    cqService.search(cqMsg);
-                                    break;
-                                case "costme":
-                                case "mycost":
-                                    cqService.cost(cqMsg);
-                                    break;
-                                case "cost":
-                                    cqMsg.setRequired(new ParameterEnum[]{ParameterEnum.USERNAME});
-                                    cqService.cost(cqMsg);
-                                    break;
-                                case "pr":
-                                case "prs":
-                                    cqMsg.setOptional(new ParameterEnum[]{ParameterEnum.MODE});
-                                    cqService.recentPassed(cqMsg);
-                                    break;
-                                case "bns":
-                                    cqMsg.setRequired(new ParameterEnum[]{ParameterEnum.USERNAME});
-                                    cqMsg.setOptional(new ParameterEnum[]{ParameterEnum.MODE});
-                                    cqService.getBonusPP(cqMsg);
-                                    break;
-                                case "mybns":
-                                case "bnsme":
-                                    cqMsg.setOptional(new ParameterEnum[]{ParameterEnum.MODE});
-                                    cqService.getBonusPP(cqMsg);
-                                    break;
-                                case "mode":
-                                    cqMsg.setRequired(new ParameterEnum[]{ParameterEnum.MODE});
-                                    cqService.setMode(cqMsg);
-                                    break;
-                                case "roll":
-                                    cqService.roll(cqMsg);
-                                    break;
-                                case "time":
-                                    cqService.time(cqMsg);
-                                    break;
-                                case "addmap":
-                                    analyzeService.addTargetMap(cqMsg);
-                                    break;
-                                case "delmap":
-                                    analyzeService.delTargetMap(cqMsg);
-                                    break;
-                                case "delallmap":
-                                    analyzeService.delAllTargetMap(cqMsg);
-                                    break;
-                                case "listmap":
-                                    analyzeService.listTargetMap(cqMsg);
-                                    break;
-                                case "adduser":
-                                    analyzeService.addTargetUser(cqMsg);
-                                    break;
-                                case "deluser":
-                                    analyzeService.delTargetUser(cqMsg);
-                                    break;
-                                case "delalluser":
-                                    analyzeService.delAllTargetUser(cqMsg);
-                                    break;
-                                case "listuser":
-                                    analyzeService.listTargetUser(cqMsg);
-                                    break;
-                                case "upduser":
-                                    cqMsg.setRequired(new ParameterEnum[]{ParameterEnum.SHADOWSOCKS_USER, ParameterEnum.SHADOWSOCKS_NUMBER});
-                                    cqMsg.setOptional(new ParameterEnum[]{ParameterEnum.SHADOWSOCKS_CONFIRM});
-                                    shadowSocksCmdService.service(cqMsg);
-                                    break;
-                                case "getcode":
-                                    cqMsg.setRequired(new ParameterEnum[]{ParameterEnum.SHADOWSOCKS_NUMBER});
-                                    cqMsg.setOptional(new ParameterEnum[]{ParameterEnum.SHADOWSOCKS_COUNT});
-                                    shadowSocksCmdService.service(cqMsg);
-                                    break;
-                                default:
-                                    // 转交给黄花菜
-//                                    boolean hasDayLily = false;
-//                                    if ("group".equals(cqMsg.getMessageType())) {
-//                                        CqResponse<List<QQInfo>> cqResponse;
-//                                        cqResponse = cqManager.getGroupMembers(cqMsg.getGroupId());
-//                                        for (QQInfo qqInfo : cqResponse.getData()) {
-//                                            if (Long.valueOf(2181697779L).equals(qqInfo.getUserId())) {
-//                                                hasDayLily = true;
-//                                            }
-//                                        }
-//                                    }
-//                                    if (!hasDayLily) {
-                                    dayLilyManager.sendMsg(cqMsg);
-//                                    }
-                                    break;
-
-                            }
-                            break;
                     }
 
                 }
@@ -504,7 +179,7 @@ public class CqController {
     private void notifyInitComplete() {
         CqMsg cqMsg = new CqMsg();
         cqMsg.setMessageType("private");
-        cqMsg.setUserId(1335734657L);
+        cqMsg.setQQ(1335734657L);
         cqMsg.setMessage("初始化完成，欢迎使用");
         cqManager.sendMsg(cqMsg);
     }

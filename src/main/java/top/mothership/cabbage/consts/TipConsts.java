@@ -8,9 +8,8 @@ public class TipConsts {
     public static final String USERNAME_GET_FAILED = "没有从osu!api获取到名为%s的玩家信息。";
     public static final String USERID_GET_FAILED = "没有从osu!api获取到uid为%d的玩家信息。";
     public static final String USER_ID_GET_FAILED_AND_NOT_USED = "没有从osu!api获取到uid为%d的玩家信息。";
-    public static final String FORMAT_ERROR = "“%s”不是合法的%s。我们不再支持文中掺杂命令。";
-    public static final String ARGUMENTS_LESS_THAN_PARAMETERS = "该命令的必须形参为：%s，提供的实参数量为%d，不满足最小形参数量。";
-    public static final String ARGUMENTS_MORE_THAN_PARAMETERS = "该命令的必须形参为：%s，可选形参为：%s，提供的实参数量为%d，超过最大形参数量。";
+    public static final String FORMAT_ERROR = "“%s”不是合法的%s。我们不再支持在命令后添加其他内容。";
+    public static final String ARGUMENT_LACK = "该命令在位置%d缺少必需参数：%s，";
     public static final String QUERY_BANCHO_BOT = "你们总是想查BanchoBot。" +
             "\n可是BanchoBot已经很累了，她不想被查。" +
             "\n她想念自己的小ppy，而不是被逼着查PP。" +

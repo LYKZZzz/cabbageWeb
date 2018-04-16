@@ -19,14 +19,13 @@ import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import top.mothership.cabbage.pattern.RegularPattern;
-import top.mothership.cabbage.pattern.WebPagePattern;
 import top.mothership.cabbage.consts.OverallConsts;
 import top.mothership.cabbage.mapper.ResDAO;
+import top.mothership.cabbage.pattern.RegularPattern;
+import top.mothership.cabbage.pattern.WebPagePattern;
 import top.mothership.cabbage.pojo.osu.Beatmap;
 import top.mothership.cabbage.pojo.osu.OsuFile;
 import top.mothership.cabbage.pojo.osu.OsuSearchResp;
-import top.mothership.cabbage.pojo.osu.SearchParam;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -358,18 +357,18 @@ public class WebPageManager {
     }
 
     /**
-     * Gets rank.
+     * 二分法获取Score Rank排名
      *
      * @param rScore the r score
      * @param start  the start
      * @param end    the end
-     * @return the rank
+     * @return 如果分数在指定的最低排名外 ，返回null
      */
-    public int getRank(long rScore, int start, int end) {
-        long endValue = getScore(end);
+    public Integer getRank(long rScore, int start, int end) {
+        Long endValue = getScore(end);
         if (rScore < endValue || endValue == 0) {
             map.clear();
-            return 0;
+            return null;
         }
         if (rScore == endValue) {
             map.clear();
@@ -378,14 +377,14 @@ public class WebPageManager {
         //第一次写二分法……不过大部分时间都花在算准确页数，和拿页面元素上了
         while (start <= end) {
             int middle = (start + end) / 2;
-            long middleValue = getScore(middle);
-
-            if (middleValue == 0) {
+            Long middleValue = getScore(middle);
+            //
+            if (middleValue == null) {
                 map.clear();
                 return 0;
             }
             if (rScore == middleValue) {
-                // 等于中值直接返回
+                //等于中值直接返回
                 //清空掉缓存
                 map.clear();
                 return middle;
@@ -397,11 +396,11 @@ public class WebPageManager {
             }
         }
         map.clear();
-        return 0;
+        return null;
     }
 
 
-    private long getScore(int rank) {
+    private Long getScore(Integer rank) {
         Document doc = null;
         int retry = 0;
         logger.info("正在抓取#" + rank + "的玩家的分数");
@@ -424,7 +423,7 @@ public class WebPageManager {
             }
             if (retry == 5) {
                 logger.error("查询分数失败五次");
-                return 0;
+                return null;
             }
             map.put(p, doc);
         } else {
@@ -549,7 +548,9 @@ public class WebPageManager {
     /**
      * 对接osu search进行谱面搜索的方法。
      *
-     * @return 谱面
+     * @param searchParam the search param
+     * @param mode        the mode
+     * @return 谱面 beatmap
      */
     public Beatmap searchBeatmap(SearchParam searchParam, Integer mode) {
         int retry = 0;
@@ -738,6 +739,13 @@ public class WebPageManager {
         return resizedBG;
     }
 
+    /**
+     * Gets correct x and s rank.
+     *
+     * @param mode the mode
+     * @param uid  the uid
+     * @return the correct x and s rank
+     */
     public List<Integer> getCorrectXAndSRank(Integer mode, Integer uid) {
         List<Integer> list = new ArrayList<>();
         int retry = 0;

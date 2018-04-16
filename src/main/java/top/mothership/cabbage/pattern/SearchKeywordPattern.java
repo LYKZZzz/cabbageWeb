@@ -11,27 +11,22 @@ public class SearchKeywordPattern {
     public final static Pattern KETWORD = Pattern.compile("^([^-]*)-[ ]?(.*)[ ]?[\\[【](.*)[]】][ ]?[(（](.*)[)）]\\{(.*)}");
 
     /**
-     * 搞了一半失败的Shell格式
-     */
-//    public final static pattern OSU_SEARCH_KETWORD_SHELL = pattern.compile("((?:-(a|t|d|m|ar|od|cs|hp)) ([^-]*)){1,8}");
-
-    /**
      * MOD
      */
-    public final static Pattern MOD = Pattern.compile("[!！]([^ ]*)[ ]?(.*)(?:\\+| \\+)(.*)");
+    public final static Pattern MOD = Pattern.compile("(.*)(?:\\+| \\+)(.*)");
     /**
      * acc cb miss
      */
-    public final static Pattern PP_CALC = Pattern.compile("[!！]([^ ]*)[ ]?(.*)[《<](.*)[》>]");
+    public final static Pattern PP_CALC = Pattern.compile("(.*)[《<](.*)[》>]");
     /**
      * mode
      */
-    public final static Pattern MODE = Pattern.compile("[!！]([^ ]*)[ ]?(.*)(?: :| ：|：|:)(.*)");
+    public final static Pattern MODE = Pattern.compile("(.*)(?: :| ：|：|:)(.*)");
     /**
      * 取出四维
      */
     public final static Pattern FOUR_DIMENSIONS_REGEX = Pattern
-            .compile("(?:AR(\\d{1,2}(?:\\.|。)?(?:\\d{1,2})?))?(?:OD(\\d{1,2}[.。]?(?:\\d{1,2})?))?(?:CS(\\d{1,2}[.。]?(?:\\d{1,2})?))?(?:HP(\\d{1,2}(?:\\.|。)?(?:\\d{1,2})?))?", Pattern.CASE_INSENSITIVE);
+            .compile("(?:AR(\\d{1,2}[.。]?(?:\\d{1,2})?))?(?:OD(\\d{1,2}[.。]?(?:\\d{1,2})?))?(?:CS(\\d{1,2}[.。]?(?:\\d{1,2})?))?(?:HP(\\d{1,2}[.。]?(?:\\d{1,2})?))?", Pattern.CASE_INSENSITIVE);
 
     /**
      * 用来处理纯数字搜索词（bid）的表达式

@@ -9,16 +9,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 import top.mothership.cabbage.consts.OverallConsts;
-import top.mothership.cabbage.manager.ApiManager;
+import top.mothership.cabbage.manager.OsuApiManager;
 import top.mothership.cabbage.manager.WebPageManager;
+import top.mothership.cabbage.mapper.PlayerInfoDAO;
 import top.mothership.cabbage.mapper.RedisDAO;
 import top.mothership.cabbage.mapper.UserDAO;
-import top.mothership.cabbage.mapper.UserInfoDAO;
 import top.mothership.cabbage.pojo.User;
 import top.mothership.cabbage.pojo.WebResponse;
-import top.mothership.cabbage.pojo.osu.Userinfo;
-import top.mothership.cabbage.serviceImpl.CqServiceImpl;
-import top.mothership.cabbage.serviceImpl.UserServiceImpl;
+import top.mothership.cabbage.pojo.osu.PlayerInfo;
+import top.mothership.cabbage.service.CqServiceImpl;
+import top.mothership.cabbage.service.UserServiceImpl;
 import top.mothership.cabbage.util.osu.UserUtil;
 import top.mothership.cabbage.util.qq.ImgUtil;
 
@@ -41,8 +41,8 @@ import java.util.List;
 public class ApiController {
     private final UserServiceImpl userService;
     private Logger logger = LogManager.getLogger(this.getClass());
-    private final UserInfoDAO userInfoDAO;
-    private final ApiManager apiManager;
+    private final PlayerInfoDAO userInfoDAO;
+    private final OsuApiManager osuApiManager;
     private final ImgUtil imgUtil;
     private final UserDAO userDAO;
     private final UserUtil userUtil;
@@ -50,10 +50,10 @@ public class ApiController {
     private final RedisDAO redisDAO;
 
     @Autowired
-    public ApiController(UserServiceImpl userService, UserInfoDAO userInfoDAO, ApiManager apiManager, ImgUtil imgUtil, UserDAO userDAO, CqServiceImpl cqService, UserUtil userUtil, WebPageManager webPageManager, RedisDAO redisDAO) {
+    public ApiController(UserServiceImpl userService, PlayerInfoDAO userInfoDAO, OsuApiManager osuApiManager, ImgUtil imgUtil, UserDAO userDAO, CqServiceImpl cqService, UserUtil userUtil, WebPageManager webPageManager, RedisDAO redisDAO) {
         this.userService = userService;
         this.userInfoDAO = userInfoDAO;
-        this.apiManager = apiManager;
+        this.osuApiManager = osuApiManager;
         this.imgUtil = imgUtil;
         this.userDAO = userDAO;
         this.userUtil = userUtil;
@@ -78,12 +78,12 @@ public class ApiController {
             mode = user.getMode();
         }
         //去osu api验证用户名是否存在
-        Userinfo now = apiManager.getUser(mode, uid);
+        PlayerInfo now = osuApiManager.getUser(mode, uid);
         if (now == null) {
             return new Gson().toJson(new WebResponse<>(1, "user not found", null));
         }
         //取到最接近8.29的那条记录
-        Userinfo earliest = userInfoDAO.getNearestUserInfo(mode, now.getUserId(), LocalDate.of(2017, 8, 29));
+        PlayerInfo earliest = userInfoDAO.getNearestUserInfo(mode, now.getUserId(), LocalDate.of(2017, 8, 29));
         if (earliest == null) {
             return new Gson().toJson(new WebResponse<>(2, "user not registered", null));
         }
@@ -96,9 +96,9 @@ public class ApiController {
         if (start.plusDays(limit).isAfter(LocalDate.now())) {
             return new Gson().toJson(new WebResponse<>(4, "end date is too late", null));
         }
-        List<Userinfo> list = new ArrayList<>();
+        List<PlayerInfo> list = new ArrayList<>();
         for (long i = 0; i < limit; i++) {
-            Userinfo tmp = userInfoDAO.getUserInfo(mode, now.getUserId(), start.plusDays(i));
+            PlayerInfo tmp = userInfoDAO.getUserInfo(mode, now.getUserId(), start.plusDays(i));
             list.add(tmp);
         }
 
@@ -124,8 +124,8 @@ public class ApiController {
         String role;
         Integer scoreRank;
         User user = userDAO.getUser(null, uid);
-        Userinfo userFromAPI = apiManager.getUser(mode, uid);
-        Userinfo userInDB = null;
+        PlayerInfo userFromAPI = osuApiManager.getUser(mode, uid);
+        PlayerInfo userInDB = null;
         boolean near = false;
         int day = 1;
         if (user == null) {
@@ -201,11 +201,11 @@ public class ApiController {
     @RequestMapping(value = "/userinfo/nearest/{uid}", method = RequestMethod.GET)
     @CrossOrigin(origins = "http://localhost")
     public String nearestUserInfo(@PathVariable Integer uid, @RequestParam(value = "mode", defaultValue = "0", required = false) Integer mode) {
-        Userinfo userInDB  = redisDAO.get(uid,mode);
+        PlayerInfo userInDB = redisDAO.get(uid, mode);
         if (userInDB == null) {
            userInDB =  userInfoDAO.getNearestUserInfo(mode, uid, LocalDate.now().minusDays(1));
             if (userInDB == null) {
-                userInDB = apiManager.getUser(mode, uid);
+                userInDB = osuApiManager.getUser(mode, uid);
                 userUtil.registerUser(userInDB.getUserId(), mode, 0L, OverallConsts.DEFAULT_ROLE);
                 return new Gson().toJson(new WebResponse<>(1, "user not registered", null));
             }

@@ -15,11 +15,10 @@ import java.net.URL;
 
 @Component
 public class DayLilyManager {
-    private final String baseURL = "http://123.206.100.246:23333/api/getresponse";
+    private final String baseURL = "http://localhost:23333/api/getresponse";
     private Logger logger = LogManager.getLogger(this.getClass());
 
     public void sendMsg(CqMsg cqMsg) {
-        logger.info("开始转发消息到黄花菜：" + cqMsg.getMessage());
         HttpURLConnection httpConnection;
         try {
             httpConnection =

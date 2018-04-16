@@ -8,8 +8,8 @@ import org.springframework.stereotype.Component;
 import top.mothership.cabbage.manager.CqManager;
 import top.mothership.cabbage.mapper.UserDAO;
 import top.mothership.cabbage.pojo.User;
+import top.mothership.cabbage.pojo.coolq.CqHttpApiDataResponse;
 import top.mothership.cabbage.pojo.coolq.CqMsg;
-import top.mothership.cabbage.pojo.coolq.RespData;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -48,13 +48,13 @@ public class SmokeUtil {
         this.userDAO = userDAO;
         loadGroupAdmins();
         //对所有群开启消息记录
-        List<RespData> groups = cqManager.getGroups().getData();
-        for (RespData respData : groups) {
-            if(!repeatRecordGroups.contains(String.valueOf(respData.getGroupId()))
-                    &&!repeatSmokeGroups.contains(String.valueOf(respData.getGroupId()))) {
-                msgQueues.put(respData.getGroupId(), new MsgQueue(50));
+        List<CqHttpApiDataResponse> groups = cqManager.getGroups().getData();
+        for (CqHttpApiDataResponse cqHttpApiDataResponse : groups) {
+            if (!repeatRecordGroups.contains(String.valueOf(cqHttpApiDataResponse.getGroupId()))
+                    && !repeatSmokeGroups.contains(String.valueOf(cqHttpApiDataResponse.getGroupId()))) {
+                msgQueues.put(cqHttpApiDataResponse.getGroupId(), new MsgQueue(50));
             }else{
-                msgQueues.put(respData.getGroupId(), new MsgQueue());
+                msgQueues.put(cqHttpApiDataResponse.getGroupId(), new MsgQueue());
             }
         }
     }

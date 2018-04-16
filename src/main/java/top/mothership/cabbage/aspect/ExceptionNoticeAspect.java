@@ -14,9 +14,9 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 /**
- * The type Exception notice aspect.
+ * 用于处理全局异常的类，一旦有异常发生就通过QQ消息通知我
  *
- * @author 瞿瀚盛  用于处理全局异常的类，一旦有异常发生就通过QQ消息通知我
+ * @author 瞿瀚盛
  */
 @Component
 @Aspect
@@ -91,7 +91,7 @@ private final CqManager cqManager;
             }
             CqMsg cqMsg = new CqMsg();
             cqMsg.setMessage(resp);
-            cqMsg.setUserId(1335734657L);
+            cqMsg.setQQ(1335734657L);
             cqMsg.setMessageType("private");
             cqManager.sendMsg(cqMsg);
 

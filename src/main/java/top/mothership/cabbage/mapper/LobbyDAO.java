@@ -3,7 +3,7 @@ package top.mothership.cabbage.mapper;
 import org.apache.ibatis.annotations.*;
 import org.springframework.stereotype.Repository;
 import top.mothership.cabbage.pojo.osu.Lobby;
-import top.mothership.cabbage.pojo.osu.MpBeatmap;
+import top.mothership.cabbage.pojo.osu.MultiPlayingBeatmap;
 
 import java.util.List;
 
@@ -74,13 +74,13 @@ public interface LobbyDAO {
     /**
      * 对谱面简单的增删查，INSERT暂时不在数据库层面采用措施，insert之前先get一下
      *
-     * @param mpBeatmap the beatmap
+     * @param multiPlayingBeatmap the beatmap
      */
-    @Insert("INSERT INTO `mp_beatmap` VALUES (null,#{mpBeatmap.beatmapId},#{mpBeatmap.recommender},#{mpBeatmap.group},#{mpBeatmap.mods})")
-    void addLobbyBeatmap(@Param("mpBeatmap") MpBeatmap mpBeatmap);
+    @Insert("INSERT INTO `mp_beatmap` VALUES (null,#{multiPlayingBeatmap.beatmapId},#{multiPlayingBeatmap.recommender},#{multiPlayingBeatmap.group},#{multiPlayingBeatmap.mods})")
+    void addLobbyBeatmap(@Param("multiPlayingBeatmap") MultiPlayingBeatmap multiPlayingBeatmap);
 
-    @Update("UPDATE `mp_beatmap` SET `group` = #{mpBeatmap.group} WHERE `beatmap_id` = #{mpBeatmap.beatmapId}")
-    void updateBeatmapGroup(@Param("mpBeatmap") MpBeatmap mpBeatmap);
+    @Update("UPDATE `mp_beatmap` SET `group` = #{multiPlayingBeatmap.group} WHERE `beatmap_id` = #{multiPlayingBeatmap.beatmapId}")
+    void updateBeatmapGroup(@Param("multiPlayingBeatmap") MultiPlayingBeatmap multiPlayingBeatmap);
 
     /**
      * Gets lobby beatmap by group.
@@ -89,17 +89,17 @@ public interface LobbyDAO {
      * @return the lobby beatmap by group
      */
     @Select("SELECT * FROM `mp_beatmap` WHERE `group` = #{group}")
-    List<MpBeatmap> getLobbyBeatmapByGroup(@Param("group") String group);
+    List<MultiPlayingBeatmap> getLobbyBeatmapByGroup(@Param("group") String group);
 
     @Select("SELECT * FROM `mp_beatmap` WHERE `group` = #{group} AND `beatmap_id` = #{beatmap_id}")
-    MpBeatmap getLobbyBeatmapByGroupAndBid(@Param("group") String group, @Param("beatmap_id") Integer beatmap_id);
+    MultiPlayingBeatmap getLobbyBeatmapByGroupAndBid(@Param("group") String group, @Param("beatmap_id") Integer beatmap_id);
 
     /**
      * Del lobby beatmap.
      *
-     * @param mpBeatmap the beatmap
+     * @param multiPlayingBeatmap the beatmap
      */
-    @Delete("DELETE FROM `mp_beatmap` WHERE `beatmap_id` = #{mpBeatmap.beatmapId}")
-    void delLobbyBeatmap(@Param("mpBeatmap") MpBeatmap mpBeatmap);
+    @Delete("DELETE FROM `mp_beatmap` WHERE `beatmap_id` = #{multiPlayingBeatmap.beatmapId}")
+    void delLobbyBeatmap(@Param("multiPlayingBeatmap") MultiPlayingBeatmap multiPlayingBeatmap);
 
 }

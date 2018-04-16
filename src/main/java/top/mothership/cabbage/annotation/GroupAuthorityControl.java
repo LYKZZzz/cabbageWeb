@@ -8,7 +8,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * The interface Group role control.
+ * 群权限控制用的注解。
  */
 @Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)

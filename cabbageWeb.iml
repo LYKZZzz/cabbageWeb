@@ -2,7 +2,12 @@
 <module org.jetbrains.idea.maven.project.MavenProjectsManager.isMavenModule="true" type="JAVA_MODULE" version="4">
   <component name="FacetManager">
     <facet type="Spring" name="Spring">
-      <configuration />
+      <configuration>
+        <fileset id="fileset" name="Spring Application Context" removed="false">
+          <file>file://$MODULE_DIR$/src/main/resources/spring/spring-db.xml</file>
+          <file>file://$MODULE_DIR$/src/main/resources/spring/spring-web.xml</file>
+        </fileset>
+      </configuration>
     </facet>
     <facet type="web" name="Web">
       <configuration>
@@ -36,6 +41,24 @@
     <orderEntry type="library" name="Maven: mysql:mysql-connector-java:5.1.43" level="project" />
     <orderEntry type="library" name="Maven: org.mybatis:mybatis-spring:1.3.0" level="project" />
     <orderEntry type="library" name="Maven: com.alibaba:druid:1.0.29" level="project" />
+    <orderEntry type="module-library">
+      <library name="Maven: com.alibaba:jconsole:1.8.0">
+        <CLASSES>
+          <root url="jar://C:/Program Files/Java/jdk1.8.0_131/lib/jconsole.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
+    <orderEntry type="module-library">
+      <library name="Maven: com.alibaba:tools:1.8.0">
+        <CLASSES>
+          <root url="jar://C:/Program Files/Java/jdk1.8.0_131/lib/tools.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
     <orderEntry type="library" name="Maven: com.twelvemonkeys.imageio:imageio-jpeg:3.3.2" level="project" />
     <orderEntry type="library" name="Maven: com.twelvemonkeys.imageio:imageio-core:3.3.2" level="project" />
     <orderEntry type="library" name="Maven: com.twelvemonkeys.imageio:imageio-metadata:3.3.2" level="project" />
@@ -76,5 +99,14 @@
     <orderEntry type="library" name="Maven: org.springframework:spring-oxm:4.3.8.RELEASE" level="project" />
     <orderEntry type="library" name="Maven: org.slf4j:slf4j-api:1.7.24" level="project" />
     <orderEntry type="library" scope="RUNTIME" name="Maven: org.slf4j:jcl-over-slf4j:1.7.24" level="project" />
+    <orderEntry type="library" name="Maven: net.dv8tion:JDA:3.6.0_355" level="project" />
+    <orderEntry type="library" name="Maven: com.google.code.findbugs:jsr305:3.0.2" level="project" />
+    <orderEntry type="library" name="Maven: org.apache.commons:commons-collections4:4.1" level="project" />
+    <orderEntry type="library" name="Maven: org.json:json:20160810" level="project" />
+    <orderEntry type="library" name="Maven: net.sf.trove4j:trove4j:3.0.3" level="project" />
+    <orderEntry type="library" name="Maven: net.java.dev.jna:jna:4.4.0" level="project" />
+    <orderEntry type="library" name="Maven: com.neovisionaries:nv-websocket-client:2.2" level="project" />
+    <orderEntry type="library" name="Maven: com.squareup.okhttp3:okhttp:3.8.1" level="project" />
+    <orderEntry type="library" name="Maven: com.squareup.okio:okio:1.13.0" level="project" />
   </component>
 </module>

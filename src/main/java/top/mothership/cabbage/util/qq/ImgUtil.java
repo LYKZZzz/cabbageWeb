@@ -10,8 +10,8 @@ import top.mothership.cabbage.manager.WebPageManager;
 import top.mothership.cabbage.pattern.RegularPattern;
 import top.mothership.cabbage.pojo.osu.Beatmap;
 import top.mothership.cabbage.pojo.osu.OppaiResult;
+import top.mothership.cabbage.pojo.osu.PlayerInfo;
 import top.mothership.cabbage.pojo.osu.Score;
-import top.mothership.cabbage.pojo.osu.Userinfo;
 import top.mothership.cabbage.util.osu.ScoreUtil;
 
 import javax.imageio.ImageIO;
@@ -39,7 +39,7 @@ import java.util.regex.Matcher;
  */
 @Component
 //采用原型模式注入，避免出现错群问题
-//2017-11-6 12:50:14改为全部返回BASE64编码
+//2017-11-6 12:50:14全部返回BASE64编码，但我依然不敢改成单例模式……
 @Scope(proxyMode = ScopedProxyMode.TARGET_CLASS, value = "prototype")
 
 
@@ -81,7 +81,7 @@ public class ImgUtil {
      * @param mode        模式，只支持0/1/2/3
      * @return Base64字串 string
      */
-    public String drawUserInfo(Userinfo userFromAPI, Userinfo userInDB, String role, int day, boolean approximate, int scoreRank, Integer mode) {
+    public String drawUserInfo(PlayerInfo userFromAPI, PlayerInfo userInDB, String role, Integer day, boolean approximate, Integer scoreRank, Integer mode) {
         BufferedImage ava = webPageManager.getAvatar(userFromAPI.getUserId());
         BufferedImage bg;
         BufferedImage layout = getCopyImage(images.get("layout.png"));
@@ -124,7 +124,7 @@ public class ImgUtil {
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         //将score rank比用户名先画
 
-        if (scoreRank > 0) {
+        if (scoreRank != null) {
             //把score rank用到的bg画到bg上
             g2.drawImage(scoreRankBG, 653, 7, null);
             Integer x;
@@ -333,7 +333,7 @@ public class ImgUtil {
      * @param mode        the mode
      * @return the string
      */
-    public String drawUserBP(Userinfo userFromAPI, List<Score> list, Integer mode, boolean mixedmode) {
+    public String drawUserBP(PlayerInfo userFromAPI, List<Score> list, Integer mode, boolean mixedmode) {
 
         //计算最终宽高
         int height = images.get("bptop.png").getHeight();
@@ -468,7 +468,7 @@ public class ImgUtil {
      * @param mode        the mode
      * @return the string
      */
-    public String drawResult(Userinfo userFromAPI, Score score, Beatmap beatmap, int mode) {
+    public String drawResult(PlayerInfo userFromAPI, Score score, Beatmap beatmap, int mode) {
         String accS = scoreUtil.genAccString(score, mode);
         float acc = Float.valueOf(accS);
         BufferedImage bg;
@@ -884,7 +884,7 @@ public class ImgUtil {
      * @param mode        the mode
      * @return the string
      */
-    public String drawFirstRank(Beatmap beatmap, Score score, Userinfo userFromAPI, Long xE, int mode) {
+    public String drawFirstRank(Beatmap beatmap, Score score, PlayerInfo userFromAPI, Long xE, int mode) {
         BufferedImage bg;
         Image bg2;
         boolean unicode = false;
@@ -1333,7 +1333,7 @@ public class ImgUtil {
 //        return b;
     }
 
-    public String drawRadarImage(Map<String, Integer> ppPlus, Userinfo userinfo) {
+    public String drawRadarImage(Map<String, Integer> ppPlus, PlayerInfo userinfo) {
 //                    + "\nJump：" + map.get("Jump")
 //                    + "\nFlow：" + map.get("Flow")
 //                    + "\nPrecision：" + map.get("Precision")
@@ -1342,13 +1342,13 @@ public class ImgUtil {
 //                    + "\nAccuracy：" + map.get("Accuracy")
         BufferedImage bg = getCopyImage(images.get("costbg.png"));
         Graphics2D g2 = bg.createGraphics();
-        double threshold = 2000;
+        double threshold = 3000;
         for (Integer i : ppPlus.values()) {
-            if (i > 2000) {
-                threshold = 5000;
-            }
+
             if (i > 5000) {
                 threshold = 8000;
+            } else if (i > 3000) {
+                threshold = 5000;
             }
         }
 

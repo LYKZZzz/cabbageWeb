@@ -13,8 +13,8 @@ import org.springframework.stereotype.Component;
 import top.mothership.cabbage.consts.OverallConsts;
 import top.mothership.cabbage.pojo.osu.Beatmap;
 import top.mothership.cabbage.pojo.osu.Lobby;
+import top.mothership.cabbage.pojo.osu.PlayerInfo;
 import top.mothership.cabbage.pojo.osu.Score;
-import top.mothership.cabbage.pojo.osu.Userinfo;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -26,7 +26,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 @Component
-public class ApiManager {
+public class OsuApiManager {
     private final String getUserURL = "https://osu.ppy.sh/api/get_user";
     private final String getBPURL = "https://osu.ppy.sh/api/get_user_best";
     private final String getMapURL = "https://osu.ppy.sh/api/get_beatmaps";
@@ -40,28 +40,27 @@ public class ApiManager {
     private final WebPageManager webPageManager;
 
     @Autowired
-    public ApiManager(WebPageManager webPageManager) {
+    public OsuApiManager(WebPageManager webPageManager) {
         this.webPageManager = webPageManager;
     }
 
-    public Userinfo getUser(Integer mode, String username) {
+    public PlayerInfo getUser(Integer mode, String username) {
         String result = accessAPI("user", username, "string", null, null, null, null, mode);
-        Userinfo userFromAPI = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).setDateFormat("yyyy-MM-dd HH:mm:ss").create().fromJson(result, Userinfo.class);
+        PlayerInfo userFromAPI = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).setDateFormat("yyyy-MM-dd HH:mm:ss").create().fromJson(result, PlayerInfo.class);
         if (userFromAPI != null) {
-            //请求API时加入mode的标记，并且修复Rank问题
+            //请求API时加入mode的标记
+            //2018-4-4 11:28:56 PPY修复了API V1，现在SH XH X S都是正常的值了
             userFromAPI.setMode(mode);
-            fixRank(userFromAPI);
         }
         return userFromAPI;
     }
 
-    public Userinfo getUser(Integer mode, Integer userId) {
+    public PlayerInfo getUser(Integer mode, Integer userId) {
         String result = accessAPI("user", String.valueOf(userId), "id", null, null, null, null, mode);
-        Userinfo userFromAPI = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).setDateFormat("yyyy-MM-dd HH:mm:ss").create().fromJson(result, Userinfo.class);
+        PlayerInfo userFromAPI = new GsonBuilder().setFieldNamingPolicy(FieldNamingPolicy.LOWER_CASE_WITH_UNDERSCORES).setDateFormat("yyyy-MM-dd HH:mm:ss").create().fromJson(result, PlayerInfo.class);
         if (userFromAPI != null) {
-            //请求API时加入mode的标记，并且修复Rank问题
+            //请求API时加入mode的标记
             userFromAPI.setMode(mode);
-            fixRank(userFromAPI);
         }
         return userFromAPI;
     }
@@ -196,14 +195,6 @@ public class ApiManager {
                 .setDateFormat("yyyy-MM-dd HH:mm:ss").create().fromJson(result, Lobby.class);
     }
 
-    private void fixRank(Userinfo userFromAPI) {
-        logger.info("开始修正玩家" + userFromAPI.getUserName() + "的SH XH数据");
-        List<Integer> list = webPageManager.getCorrectXAndSRank(userFromAPI.getMode(), userFromAPI.getUserId());
-        if (list != null) {
-            userFromAPI.setCountRankSs(list.get(0));
-            userFromAPI.setCountRankS(list.get(1));
-        }
-    }
 
     private String accessAPI(String apiType, String uid, String uidType, String bid, String hash, Integer rank, String mid, Integer mode) {
         String URL;

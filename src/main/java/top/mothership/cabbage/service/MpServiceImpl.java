@@ -1,19 +1,19 @@
-package top.mothership.cabbage.serviceImpl;
+package top.mothership.cabbage.service;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Service;
-import top.mothership.cabbage.manager.ApiManager;
 import top.mothership.cabbage.manager.CqManager;
+import top.mothership.cabbage.manager.OsuApiManager;
 import top.mothership.cabbage.mapper.LobbyDAO;
+import top.mothership.cabbage.mapper.PlayerInfoDAO;
 import top.mothership.cabbage.mapper.UserDAO;
-import top.mothership.cabbage.mapper.UserInfoDAO;
 import top.mothership.cabbage.pattern.CQCodePattern;
-import top.mothership.cabbage.pattern.MpCommandPattern;
+import top.mothership.cabbage.pattern.IrcMsgPattern;
 import top.mothership.cabbage.pojo.User;
 import top.mothership.cabbage.pojo.coolq.CqMsg;
 import top.mothership.cabbage.pojo.osu.Lobby;
-import top.mothership.cabbage.pojo.osu.Userinfo;
+import top.mothership.cabbage.pojo.osu.PlayerInfo;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -27,23 +27,23 @@ import java.util.regex.Matcher;
 @Service
 public class MpServiceImpl {
     private final LobbyDAO lobbyDAO;
-    private final ApiManager apiManager;
+    private final OsuApiManager osuApiManager;
     private Logger logger = LogManager.getLogger(this.getClass());
     private final UserDAO userDAO;
     private final CqManager cqManager;
-    private final UserInfoDAO userInfoDAO;
+    private final PlayerInfoDAO userInfoDAO;
 
     /**
      * Instantiates a new Mp service.
      * @param lobbyDAO   the lobby dao
-     * @param apiManager the api manager
+     * @param osuApiManager the api manager
      * @param userDAO    the user dao
      * @param cqManager  the cq manager
      * @param userInfoDAO
      */
-    public MpServiceImpl(LobbyDAO lobbyDAO, ApiManager apiManager, UserDAO userDAO, CqManager cqManager, UserInfoDAO userInfoDAO) {
+    public MpServiceImpl(LobbyDAO lobbyDAO, OsuApiManager osuApiManager, UserDAO userDAO, CqManager cqManager, PlayerInfoDAO userInfoDAO) {
         this.lobbyDAO = lobbyDAO;
-        this.apiManager = apiManager;
+        this.osuApiManager = osuApiManager;
         this.userDAO = userDAO;
         this.cqManager = cqManager;
         this.userInfoDAO = userInfoDAO;
@@ -56,7 +56,7 @@ public class MpServiceImpl {
      * @param cqMsg the cq msg
      */
     public void reserveLobby(CqMsg cqMsg) {
-        Matcher cmdMatcher = MpCommandPattern.MP_CMD_REGEX.matcher(cqMsg.getMessage());
+        Matcher cmdMatcher = IrcMsgPattern.MP_CMD_REGEX.matcher(cqMsg.getMessage());
         cmdMatcher.find();
         User user = userDAO.getUser(cqMsg.getUserId(), null);
         if (user == null) {
@@ -119,7 +119,7 @@ public class MpServiceImpl {
      * @param cqMsg the cq msg
      */
     public void invitePlayer(CqMsg cqMsg) {
-        Matcher cmdMatcher = MpCommandPattern.MP_CMD_REGEX.matcher(cqMsg.getMessage());
+        Matcher cmdMatcher = IrcMsgPattern.MP_CMD_REGEX.matcher(cqMsg.getMessage());
         cmdMatcher.find();
         User user = userDAO.getUser(cqMsg.getUserId(), null);
         if (user == null) {
@@ -139,7 +139,7 @@ public class MpServiceImpl {
         String target = cmdMatcher.group(2);
         Matcher atMatcher = CQCodePattern.AT.matcher(target);
         User targetUser;
-        Userinfo userFromAPI;
+        PlayerInfo userFromAPI;
         if (atMatcher.find()) {
             String QQ = atMatcher.group(1);
             targetUser = userDAO.getUser(Long.valueOf(QQ), null);
@@ -153,9 +153,9 @@ public class MpServiceImpl {
                 cqManager.sendMsg(cqMsg);
                 return;
             }
-            userFromAPI = apiManager.getUser(0, targetUser.getUserId());
+            userFromAPI = osuApiManager.getUser(0, targetUser.getUserId());
         } else {
-            userFromAPI = apiManager.getUser(0, target);
+            userFromAPI = osuApiManager.getUser(0, target);
             if (userFromAPI == null) {
                 cqMsg.setMessage("没有获取到id是" + target + "的玩家。");
                 cqManager.sendMsg(cqMsg);

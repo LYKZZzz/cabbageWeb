@@ -43,7 +43,7 @@ public class RoleControlAspect {
     /**
      * 拦截service层所有方法中带AllowedUser注解的方法
      */
-    @Pointcut("execution(* top.mothership.cabbage.serviceImpl.*.*(top.mothership.cabbage.pojo.coolq.CqMsg,..))")
+    @Pointcut("execution(* top.mothership.cabbage.service.*.*(top.mothership.cabbage.pojo.coolq.CqMsg,..))")
     private void aspectjMethod() {
     }
 
@@ -51,11 +51,13 @@ public class RoleControlAspect {
     public Object roleControl(ProceedingJoinPoint pjp, CqMsg cqMsg) throws Throwable {
         //取出Class上的注解
         UserAuthorityControl userAuthorityControl = null;
+
         List<Long> allowedUser = new ArrayList<>();
         Annotation[] a = pjp.getTarget().getClass().getAnnotations();
         for (Annotation aList : a) {
             if (aList.annotationType().equals(UserAuthorityControl.class)) {
-                userAuthorityControl = (UserAuthorityControl) a[1];
+                //所以我当时为啥写成了a[1]而不是aList……
+                userAuthorityControl = (UserAuthorityControl) aList;
             }
         }
         //如果Class上的注解不是null
@@ -75,7 +77,7 @@ public class RoleControlAspect {
             }
         }
         //如果拿到了用户权限的注解，并且这个注解的值没有消息发送者的qq，并且是QQ消息（而不是事件或者邀请）
-        if (allowedUser.size() > 0 && !allowedUser.contains(cqMsg.getUserId()) && "message".equals(cqMsg.getPostType())) {
+        if (allowedUser.size() > 0 && !allowedUser.contains(cqMsg.getQQ()) && "message".equals(cqMsg.getPostType())) {
             cqMsg.setMessage("[CQ:face,id=14]？");
             cqManager.sendMsg(cqMsg);
             return null;

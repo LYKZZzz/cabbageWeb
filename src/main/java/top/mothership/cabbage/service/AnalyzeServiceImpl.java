@@ -1,19 +1,19 @@
-package top.mothership.cabbage.serviceImpl;
+package top.mothership.cabbage.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import top.mothership.cabbage.annotation.UserAuthorityControl;
 import top.mothership.cabbage.consts.TipConsts;
-import top.mothership.cabbage.manager.ApiManager;
 import top.mothership.cabbage.manager.CqManager;
+import top.mothership.cabbage.manager.OsuApiManager;
 import top.mothership.cabbage.mapper.AnalyzerDAO;
 import top.mothership.cabbage.mapper.UserDAO;
 import top.mothership.cabbage.pattern.RegularPattern;
 import top.mothership.cabbage.pojo.coolq.CqMsg;
 import top.mothership.cabbage.pojo.osu.Beatmap;
+import top.mothership.cabbage.pojo.osu.PlayerInfo;
 import top.mothership.cabbage.pojo.osu.Score;
-import top.mothership.cabbage.pojo.osu.Userinfo;
 import top.mothership.cabbage.util.osu.ScoreUtil;
 
 import java.util.List;
@@ -27,18 +27,18 @@ public class AnalyzeServiceImpl {
     private final AnalyzerDAO analyzerDAO;
     private final UserDAO userDAO;
     private final ScoreUtil scoreUtil;
-    private final ApiManager apiManager;
+    private final OsuApiManager osuApiManager;
     private final CqManager cqManager;
 
     @Autowired
-    public AnalyzeServiceImpl(AnalyzerDAO analyzerDAO, UserDAO userDAO, ScoreUtil scoreUtil, ApiManager apiManager, CqManager cqManager) {
+    public AnalyzeServiceImpl(AnalyzerDAO analyzerDAO, UserDAO userDAO, ScoreUtil scoreUtil, OsuApiManager osuApiManager, CqManager cqManager) {
         this.analyzerDAO = analyzerDAO;
         this.userDAO = userDAO;
         this.scoreUtil = scoreUtil;
-        this.apiManager = apiManager;
+        this.osuApiManager = osuApiManager;
         this.cqManager = cqManager;
         cqMsg.setMessageType("private");
-        cqMsg.setUserId(1335734657L);
+        cqMsg.setQQ(1335734657L);
     }
 
     public void addTargetMap(CqMsg cqMsg) {
@@ -77,7 +77,7 @@ public class AnalyzeServiceImpl {
         if (list.size() > 0) {
             resp = new StringBuilder("目标谱面：\n");
             for (Integer i : list) {
-                Beatmap beatmap = apiManager.getBeatmap(i);
+                Beatmap beatmap = osuApiManager.getBeatmap(i);
                 if (beatmap != null) {
                     resp.append(beatmap.getBeatmapSetId()).append(" ").append(beatmap.getArtist()).append(" - ").append(beatmap.getTitle()).append(" [").append(beatmap.getVersion()).append("]\n");
                 } else {
@@ -95,7 +95,7 @@ public class AnalyzeServiceImpl {
     public void addTargetUser(CqMsg cqMsg) {
         Matcher m = RegularPattern.REG_CMD_REGEX.matcher(cqMsg.getMessage());
         m.find();
-        Userinfo userinfo = apiManager.getUser(0, m.group(2));
+        PlayerInfo userinfo = osuApiManager.getUser(0, m.group(2));
         if (userinfo != null) {
             analyzerDAO.addTargetUser(userinfo.getUserId());
             cqMsg.setMessage("增加成功：" + userinfo.getUserName());
@@ -108,7 +108,7 @@ public class AnalyzeServiceImpl {
     public void delTargetUser(CqMsg cqMsg) {
         Matcher m = RegularPattern.REG_CMD_REGEX.matcher(cqMsg.getMessage());
         m.find();
-        Userinfo userinfo = apiManager.getUser(0, m.group(2));
+        PlayerInfo userinfo = osuApiManager.getUser(0, m.group(2));
         if (userinfo != null) {
             analyzerDAO.delTargetUser(userinfo.getUserId());
             cqMsg.setMessage("删除成功：" + userinfo.getUserName());
@@ -124,7 +124,7 @@ public class AnalyzeServiceImpl {
         if (list.size() > 0) {
             resp = new StringBuilder("目标玩家：\n");
             for (Integer i : list) {
-                Userinfo userinfo = apiManager.getUser(0, i);
+                PlayerInfo userinfo = osuApiManager.getUser(0, i);
                 if (userinfo != null) {
                     resp.append(userinfo.getUserName()).append("\n");
                 } else {
@@ -152,7 +152,7 @@ public class AnalyzeServiceImpl {
         for (Integer aList : targetUser) {
             for (Integer bList : targetMap) {
                 //对每个bid去API取到分数
-                List<Score> tmp = apiManager.getScore(0, bList, aList);
+                List<Score> tmp = osuApiManager.getScore(0, bList, aList);
                 List<Score> lastTmp = analyzerDAO.getLastScoreByUidAndBid(aList, bList);
 
                 if (tmp.size() == 0) {
@@ -175,7 +175,7 @@ public class AnalyzeServiceImpl {
                             score = tmp.get(i);
                         }
                         //将代码重复一遍，避免无谓的数据库读写
-                        Beatmap beatmap = apiManager.getBeatmap(bList);
+                        Beatmap beatmap = osuApiManager.getBeatmap(bList);
                         String username = userDAO.getUser(null, aList).getCurrentUname();
                         cqMsg.setMessage(scoreUtil.genScoreString(score, beatmap, username));
                         cqManager.sendMsg(cqMsg);
@@ -185,7 +185,7 @@ public class AnalyzeServiceImpl {
                 } else {
                     for (int i = 0; i < lastTmp.size(); i++) {
                         if (tmp.get(i).getDate().getTime() != (lastTmp.get(i).getDate().getTime())) {
-                            Beatmap beatmap = apiManager.getBeatmap(bList);
+                            Beatmap beatmap = osuApiManager.getBeatmap(bList);
                             String username = userDAO.getUser(null, aList).getCurrentUname();
                             cqMsg.setMessage(scoreUtil.genScoreString(tmp.get(i), beatmap, username));
                             cqManager.sendMsg(cqMsg);

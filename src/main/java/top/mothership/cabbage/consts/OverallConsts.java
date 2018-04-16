@@ -17,12 +17,10 @@ public class OverallConsts {
 
     public final static String DEFAULT_ROLE = "creep";
 
-    public final static ParameterEnum[] EMPTY_PARAMETER_LIST = new ParameterEnum[]{};
-
-    public final static String CHANGELOG = "2018-3-27 15:23:07\n" +
-            "*恢复 !sudo unbind命令。\n" +
-            "*新增 一键获取兑换码功能。\n" +
-            "*新增 给两个时雨厨加上时雨的报时。\n" +
+    public final static String CHANGELOG = "2018-4-8 15:38:32\n" +
+            "*修正 新的参数校验：明确指定参数是否必须、以及应该出现的位置。\n" +
+            "*新增 !stat命令分离金/银SS。\n" +
+            "*删除 去掉给某个时雨厨的报时。\n" +
             "*新增 !sudo score命令。\n" +
             "*恢复 黄花菜对接相关。\n";
 }

@@ -29,16 +29,12 @@
     <!--5）配置拦截器-->
     <mvc:interceptors>
         <mvc:interceptor>
-            <mvc:mapping path="/**"/>
-            <bean class="top.mothership.cabbage.interceptors.BaseInterceptor" />
-        </mvc:interceptor>
-        <mvc:interceptor>
             <mvc:mapping path="/api/login"/>
-            <bean class="top.mothership.cabbage.interceptors.UserInterceptor" />
+            <bean class="top.mothership.cabbage.interceptor.UserInterceptor"/>
         </mvc:interceptor>
         <mvc:interceptor>
             <mvc:mapping path="/api/code"/>
-            <bean class="top.mothership.cabbage.interceptors.CodeInterceptor" />
+            <bean class="top.mothership.cabbage.interceptor.CodeInterceptor"/>
         </mvc:interceptor>
     </mvc:interceptors>
     <!--6）配置事务并注入连接池-->
@@ -48,9 +44,11 @@
         <property name="dataSource" ref="dataSource"/>
     </bean>
 
-    <!--7）指定使用AspectJ，否则无法完成AOP相关的日志、事务，会报错-->
-    <aop:aspectj-autoproxy proxy-target-class="true"/>
-
+    <!--7）强制使用CGLib动态代理，否则无法完成AOP相关的日志、事务，会报错-->
+    <!--2018-3-30 13:07:37原因查明，因为我的Service类没有实现接口，必须用cglib生成子类-->
+    <!--<aop:aspectj-autoproxy proxy-target-class="true"/>-->
+    <!--2018-3-30 16:22:56原来我之前强行指定的CgLib没起作用……？？？用之前的配置，在给Service层方法加了代理后，不管什么的执行结果都是Null，很迷-->
+    <aop:config proxy-target-class="true"/>
     <!--8）视图解析器-->
     <!--<bean id="viewResolver"-->
           <!--class="org.springframework.web.servlet.view.InternalResourceViewResolver">-->
@@ -74,7 +72,7 @@
     <!--<aop:aspect id="aspect" ref="logAspect">-->
     <!--&lt;!&ndash;对哪些方法进行日志记录 &ndash;&gt;-->
     <!--&lt;!&ndash;这里可以直接写接口，也可以写实现类。&ndash;&gt;-->
-    <!--<aop:pointcut id="logService" expression="execution(* top.mothership.cabbage.serviceImpl.*.*(..))"/>-->
+    <!--<aop:pointcut id="logService" expression="execution(* top.mothership.cabbage.service(..))"/>-->
     <!--<aop:before pointcut-ref="logService" method="doBefore"/>-->
     <!--<aop:after pointcut-ref="logService" method="doAfter"/>-->
     <!--<aop:around pointcut-ref="logService" method="doAround"/>-->
@@ -98,8 +96,8 @@
     <!--scope="prototype">-->
     <!--<property name="patterns">-->
     <!--<list>-->
-    <!--<value>top.mothership.cabbage.serviceImpl.CqServiceImpl</value>-->
-    <!--<value>top.mothership.cabbage.serviceImpl.CqAdminServiceImpl</value>-->
+    <!--<value>top.mothership.cabbage.serviceerviceImpl</value>-->
+    <!--<value>top.mothership.cabbage.servicedminServiceImpl</value>-->
     <!--</list>-->
     <!--</property>-->
     <!--</bean>-->

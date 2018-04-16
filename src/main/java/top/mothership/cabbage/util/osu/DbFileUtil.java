@@ -4,7 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import top.mothership.cabbage.manager.ApiManager;
+import top.mothership.cabbage.manager.OsuApiManager;
 import top.mothership.cabbage.pojo.osu.Beatmap;
 import top.mothership.cabbage.pojo.osu.Score;
 
@@ -21,13 +21,13 @@ import java.util.List;
 
 @Component
 public class DbFileUtil {
-    private final ApiManager apiManager;
+    private final OsuApiManager osuApiManager;
     private final ScoreUtil scoreUtil;
     private Logger logger = LogManager.getLogger(this.getClass());
 
     @Autowired
-    public DbFileUtil(ApiManager apiManager, ScoreUtil scoreUtil) {
-        this.apiManager = apiManager;
+    public DbFileUtil(OsuApiManager osuApiManager, ScoreUtil scoreUtil) {
+        this.osuApiManager = osuApiManager;
         this.scoreUtil = scoreUtil;
     }
 
@@ -45,7 +45,7 @@ public class DbFileUtil {
             logger.info("开始解析收藏夹" + name);
             for (int i2 = 0; i2 < count2; i2++) {
                 String md5Hash = readString(reader);
-                Beatmap beatmap = apiManager.getBeatmap(md5Hash);
+                Beatmap beatmap = osuApiManager.getBeatmap(md5Hash);
                 md5Hashes.add(beatmap);
             }
 
@@ -61,7 +61,7 @@ public class DbFileUtil {
         LinkedHashMap<Beatmap, List<Score>> map = new LinkedHashMap<>(count);
         for (int i = 0; i < count; i++) {
             String md5 = readString(reader);
-            Beatmap beatmap = apiManager.getBeatmap(md5);
+            Beatmap beatmap = osuApiManager.getBeatmap(md5);
             int scoreCount = readInt(reader);
             List<Score> scores = new ArrayList<>(scoreCount);
             for (int i2 = 0; i2 < scoreCount; i2++) {

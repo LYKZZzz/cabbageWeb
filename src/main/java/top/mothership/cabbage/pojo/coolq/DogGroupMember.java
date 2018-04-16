@@ -4,11 +4,11 @@ import com.google.gson.annotations.SerializedName;
 import lombok.Data;
 
 @Data
-public class QQInfo {
+public class DogGroupMember {
     @SerializedName("group_id")
     private Long groupId;
     @SerializedName("user_id")
-    private Long userId;
+    private Long QQ;
     private String nickname;
     private String card;
     private String sex;

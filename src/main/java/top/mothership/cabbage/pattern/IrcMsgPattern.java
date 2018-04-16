@@ -2,11 +2,8 @@ package top.mothership.cabbage.pattern;
 
 import java.util.regex.Pattern;
 
-public class MpCommandPattern {
-    /**
-     * MP系列命令,和sudo一样
-     */
-    public final static Pattern MP_CMD_REGEX = Pattern.compile("[!！]mp ([^ ]*)[ ]?([^:：]*)[:|：]?(.*)");
+public class IrcMsgPattern {
+
     /**
      * 对所有服务器消息（不是banchobot发送的私聊消息）进行基本的筛选……
      */

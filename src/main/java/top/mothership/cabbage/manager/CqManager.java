@@ -4,10 +4,10 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import org.springframework.stereotype.Component;
+import top.mothership.cabbage.pojo.coolq.CqHttpApiDataResponse;
+import top.mothership.cabbage.pojo.coolq.CqHttpApiGenericResponse;
 import top.mothership.cabbage.pojo.coolq.CqMsg;
-import top.mothership.cabbage.pojo.coolq.CqResponse;
-import top.mothership.cabbage.pojo.coolq.QQInfo;
-import top.mothership.cabbage.pojo.coolq.RespData;
+import top.mothership.cabbage.pojo.coolq.DogGroupMember;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -18,12 +18,16 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-//将CQ的HTTP API封装为接口，并托管到Spring
+/**
+ * 将CQ的HTTP API封装为接口，并托管到Spring
+ *
+ * @author QHS
+ */
 @Component
 public class CqManager {
     private final String baseURL = "http://localhost:5700";
 
-    public CqResponse sendMsg(CqMsg cqMsg) {
+    public CqHttpApiGenericResponse sendMsg(CqMsg cqMsg) {
         String URL;
         switch (cqMsg.getMessageType()) {
             case "group":
@@ -73,7 +77,7 @@ public class CqManager {
                 tmp2.append(tmp);
             }
             //这里不用用到下划线转驼峰
-            return new Gson().fromJson(tmp2.toString(), CqResponse.class);
+            return new Gson().fromJson(tmp2.toString(), CqHttpApiGenericResponse.class);
         } catch (IOException e) {
             e.printStackTrace();
             return null;
@@ -81,7 +85,7 @@ public class CqManager {
 
     }
 
-    public CqResponse<List<QQInfo>> getGroupMembers(Long groupId) {
+    public CqHttpApiGenericResponse<List<DogGroupMember>> getGroupMembers(Long groupId) {
         String URL = baseURL + "/get_group_member_list";
         HttpURLConnection httpConnection;
         try {
@@ -106,14 +110,16 @@ public class CqManager {
                 tmp2.append(tmp);
             }
             //采用泛型封装，接住变化无穷的data
-            return new Gson().fromJson(tmp2.toString(), new TypeToken<CqResponse<List<QQInfo>>>() {}.getType());
+            return new Gson().fromJson(tmp2.toString(), new TypeToken<CqHttpApiGenericResponse<List<DogGroupMember>>>() {
+            }.getType());
         } catch (IOException e) {
             e.printStackTrace();
             return null;
         }
 
     }
-    public CqResponse<List<RespData>> getGroups() {
+
+    public CqHttpApiGenericResponse<List<CqHttpApiDataResponse>> getGroups() {
         String URL = baseURL + "/get_group_list";
         HttpURLConnection httpConnection;
         try {
@@ -136,15 +142,16 @@ public class CqManager {
             while ((tmp = responseBuffer.readLine()) != null) {
                 tmp2.append(tmp);
             }
-            return new Gson().fromJson(tmp2.toString(), new TypeToken<CqResponse<List<RespData>>>() {}.getType());
+            return new Gson().fromJson(tmp2.toString(), new TypeToken<CqHttpApiGenericResponse<List<CqHttpApiDataResponse>>>() {
+            }.getType());
         } catch (IOException e) {
             e.printStackTrace();
             return null;
         }
 
     }
-    public List<Long> getGroupAdmins(Long groupId){
-        List<QQInfo> members = getGroupMembers(groupId).getData();
+    public List<Long> getGroupAdmins(Long groupId) {
+        List<DogGroupMember> members = getGroupMembers(groupId).getData();
         List<Long> result = new ArrayList<>();
         if(members!=null) {
             for (int i = 0; i < members.size(); i++) {
@@ -156,8 +163,8 @@ public class CqManager {
         return result;
     }
 
-    public Long getOwner(Long groupId){
-        List<QQInfo> members = getGroupMembers(groupId).getData();
+    public Long getOwner(Long groupId) {
+        List<DogGroupMember> members = getGroupMembers(groupId).getData();
         for(int i=0;i<members.size();i++){
             if(members.get(i).getRole().equals("owner")){
                 return members.get(i).getUserId();
@@ -165,13 +172,14 @@ public class CqManager {
         }
         return 0L;
     }
-    public CqResponse<QQInfo> getGroupMember(Long groupId,Long userId) {
+
+    public CqHttpApiGenericResponse<DogGroupMember> getGroupMember(Long groupId, Long userId) {
         String URL = baseURL + "/get_group_member_info";
         HttpURLConnection httpConnection;
         try {
             CqMsg cqMsg = new CqMsg();
             cqMsg.setGroupId(groupId);
-            cqMsg.setUserId(userId);
+            cqMsg.setQQ(userId);
             httpConnection =
                     (HttpURLConnection) new URL(URL).openConnection();
             httpConnection.setRequestMethod("POST");
@@ -191,7 +199,8 @@ public class CqManager {
                 tmp2.append(tmp);
             }
             //采用泛型封装，接住变化无穷的data
-            return new Gson().fromJson(tmp2.toString(), new TypeToken<CqResponse<QQInfo>>() {}.getType());
+            return new Gson().fromJson(tmp2.toString(), new TypeToken<CqHttpApiGenericResponse<DogGroupMember>>() {
+            }.getType());
         } catch (IOException e) {
             e.printStackTrace();
             return null;

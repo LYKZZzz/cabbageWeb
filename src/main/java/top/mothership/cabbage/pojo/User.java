@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 public class User {
     private Integer userId;
     private String role;
-    private Long qq;
+    private Long QQ;
     private String legacyUname;
     private String currentUname;
     private boolean banned;
