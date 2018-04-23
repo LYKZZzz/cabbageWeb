@@ -18,7 +18,7 @@ public interface CommandHandler {
     List<Parameter> getParameters();
 
     /**
-     * 获取这个命令处理器的标志，让CommandHandlerFactory生成
+     * 获取这个命令处理器的标志，让CommandHandlerFactory生成，必须与命令全文对应
      *
      * @return the identifier
      */

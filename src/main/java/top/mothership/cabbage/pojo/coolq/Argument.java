@@ -2,6 +2,7 @@ package top.mothership.cabbage.pojo.coolq;
 
 import lombok.Data;
 import top.mothership.cabbage.enums.MessageSource;
+import top.mothership.cabbage.pojo.osu.OsuSearchParameter;
 import top.mothership.cabbage.pojo.shadowsocks.ShadowSocksRequest;
 
 import java.util.List;
@@ -11,6 +12,10 @@ import java.util.List;
  */
 @Data
 public class Argument {
+    /**
+     * 在QQ消息里表示QQ号
+     */
+    private Long senderId;
     private String rawMessage;
     private String subCommandLowCase;
     private MessageSource messageSource;
@@ -29,21 +34,7 @@ public class Argument {
     private String fileName;
     private String url;
     private Integer second;
-    private ShadowSocksRequest ssr;
-    private String artist;
-    private String title;
-    private String diffName;
-    private String mapper;
-    private Double ar;
-    private Double od;
-    private Double cs;
-    private Double hp;
-    private Integer mods;
-    private String modsString;
     private Integer beatmapId;
-    private Integer countMiss;
-    private Integer count100;
-    private Integer count50;
-    private Integer maxCombo;
-    private Double acc;
+    private ShadowSocksRequest ssr;
+    private OsuSearchParameter osuSearchParameter;
 }

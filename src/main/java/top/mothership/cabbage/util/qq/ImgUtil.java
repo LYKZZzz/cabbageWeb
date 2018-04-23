@@ -3,8 +3,6 @@ package top.mothership.cabbage.util.qq;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Scope;
-import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.stereotype.Component;
 import top.mothership.cabbage.manager.WebPageManager;
 import top.mothership.cabbage.pattern.RegularPattern;
@@ -14,21 +12,21 @@ import top.mothership.cabbage.pojo.osu.PlayerInfo;
 import top.mothership.cabbage.pojo.osu.Score;
 import top.mothership.cabbage.util.osu.ScoreUtil;
 
-import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.ColorModel;
 import java.awt.image.WritableRaster;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.io.FileOutputStream;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 
 
@@ -40,7 +38,8 @@ import java.util.regex.Matcher;
 @Component
 //采用原型模式注入，避免出现错群问题
 //2017-11-6 12:50:14全部返回BASE64编码，但我依然不敢改成单例模式……
-@Scope(proxyMode = ScopedProxyMode.TARGET_CLASS, value = "prototype")
+//2018-4-22 15:14:33奇怪，这个类应该是无状态的才对啊。。重构为返回图片md5同时写入文件
+//@Scope(proxyMode = ScopedProxyMode.TARGET_CLASS, value = "prototype")
 
 
 public class ImgUtil {
@@ -1428,20 +1427,27 @@ public class ImgUtil {
 
     /**
      * 将图片转换为Base64字符串……
+     * TODO 2018-4-22 15:16:28重构为返回md5并且将文件写入硬盘,实现一套自己的标识符用来表示消息里有图片
      *
      * @param img the img
      * @return the string
      */
     public String drawImage(BufferedImage img) {
-        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            ImageIO.write(img, "png", out);
-            img.flush();
-            byte[] imgBytes = out.toByteArray();
-            return Base64.getEncoder().encodeToString(imgBytes);
-        } catch (IOException e) {
-            logger.error(e.getMessage());
-            return null;
+        //计算md5？
+
+        try (FileOutputStream out = new FileOutputStream()) {
+
         }
+
+//        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+//            ImageIO.write(img, "png", out);
+//            img.flush();
+//            byte[] imgBytes = out.toByteArray();
+//            return Base64.getEncoder().encodeToString(imgBytes);
+//        } catch (IOException e) {
+//            logger.error(e.getMessage());
+//            return null;
+//        }
     }
 
     private String unicodeToString(String str) {

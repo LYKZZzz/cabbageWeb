@@ -27,6 +27,12 @@ import java.util.List;
 public class CqManager {
     private final String baseURL = "http://localhost:5700";
 
+    /**
+     * Send msg cq http api generic response.
+     *
+     * @param cqMsg the cq msg
+     * @return the cq http api generic response
+     */
     public CqHttpApiGenericResponse sendMsg(CqMsg cqMsg) {
         String URL;
         switch (cqMsg.getMessageType()) {
@@ -85,6 +91,12 @@ public class CqManager {
 
     }
 
+    /**
+     * Gets group members.
+     *
+     * @param groupId the group id
+     * @return the group members
+     */
     public CqHttpApiGenericResponse<List<DogGroupMember>> getGroupMembers(Long groupId) {
         String URL = baseURL + "/get_group_member_list";
         HttpURLConnection httpConnection;
@@ -119,6 +131,11 @@ public class CqManager {
 
     }
 
+    /**
+     * Gets groups.
+     *
+     * @return the groups
+     */
     public CqHttpApiGenericResponse<List<CqHttpApiDataResponse>> getGroups() {
         String URL = baseURL + "/get_group_list";
         HttpURLConnection httpConnection;
@@ -150,29 +167,49 @@ public class CqManager {
         }
 
     }
+
+    /**
+     * 获取狗管理
+     *
+     * @param groupId 群号
+     * @return 狗管理列表
+     */
     public List<Long> getGroupAdmins(Long groupId) {
         List<DogGroupMember> members = getGroupMembers(groupId).getData();
         List<Long> result = new ArrayList<>();
         if(members!=null) {
-            for (int i = 0; i < members.size(); i++) {
-                if (members.get(i).getRole().equals("admin")) {
-                    result.add(members.get(i).getUserId());
+            for (DogGroupMember member : members) {
+                if ("admin".equals(member.getRole())) {
+                    result.add(member.getQQ());
                 }
             }
         }
         return result;
     }
 
+    /**
+     * 获取狗群主
+     *
+     * @param groupId 群号
+     * @return 狗群主的QQ
+     */
     public Long getOwner(Long groupId) {
         List<DogGroupMember> members = getGroupMembers(groupId).getData();
-        for(int i=0;i<members.size();i++){
-            if(members.get(i).getRole().equals("owner")){
-                return members.get(i).getUserId();
+        for (DogGroupMember member : members) {
+            if ("owner".equals(member.getRole())) {
+                return member.getQQ();
             }
         }
         return 0L;
     }
 
+    /**
+     * 获取狗群员信息
+     *
+     * @param groupId 群号
+     * @param userId  QQ
+     * @return 群员信息
+     */
     public CqHttpApiGenericResponse<DogGroupMember> getGroupMember(Long groupId, Long userId) {
         String URL = baseURL + "/get_group_member_info";
         HttpURLConnection httpConnection;

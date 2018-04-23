@@ -1,5 +1,10 @@
 package top.mothership.cabbage.enums;
 
+/**
+ * 与命令字符串一一对应的枚举，Controller中根据解析出的命令字符串来这个枚举取对象，再根据对象取出对应的命令处理器
+ *
+ * @author QHS
+ */
 public enum CommandIdentifier {
     //用户组信息管理
     SUDO_ADD, SUDO_DEL, SUDO_AFK, SUDO_ROLEINFO,
@@ -12,7 +17,23 @@ public enum CommandIdentifier {
     //玩家信息管理
     SUDO_SEARCHPLAYER, SUDO_UNBIND, SUDO_钦点,
 
-    STAT, STATME, BP, RECENT;
+    STAT, STATU, STATME,
+    BP, BPU, BPS, BPUS, BPME, MYBP, BPMES, MYBPS,
+    RECENT, RS,
+    SETID, SLEEP,
+    ADD, DEL,
+    ME, SEARCH,
+    COST, COSTME, MYCOST,
+    PR, PRS,
+    MYBNS, BNSME, BNS,
+    ROLL, TIME,
+    MODE, HELP,
+
+    MP_RS, MP_MAKE, MP_INVITE, MP_LIST, MP_ABORT, MP_JOIN, MP_ADDMAP, MP_DELMAP, MP_LISTMAP, MP_HELP,
+
+    ADDMAP, DELMAP,
+
+    UPDUSER, GETCODE;
 
     /**
      * 自己实现一个判断是否有某个名字的方法

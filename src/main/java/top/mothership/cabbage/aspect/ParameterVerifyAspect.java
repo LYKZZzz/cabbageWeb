@@ -8,7 +8,7 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Pointcut;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
-import top.mothership.cabbage.annotation.SearchParameter;
+import top.mothership.cabbage.annotation.SearchParameterNeeded;
 import top.mothership.cabbage.annotation.UserAuthorityControl;
 import top.mothership.cabbage.consts.TipConsts;
 import top.mothership.cabbage.manager.CqManager;
@@ -18,6 +18,7 @@ import top.mothership.cabbage.pattern.RegularPattern;
 import top.mothership.cabbage.pattern.SearchKeywordPattern;
 import top.mothership.cabbage.pojo.coolq.Argument;
 import top.mothership.cabbage.pojo.coolq.Parameter;
+import top.mothership.cabbage.pojo.osu.OsuSearchParameter;
 import top.mothership.cabbage.pojo.shadowsocks.ShadowSocksRequest;
 import top.mothership.cabbage.service.CommandHandler;
 import top.mothership.cabbage.util.osu.ScoreUtil;
@@ -76,9 +77,9 @@ public class ParameterVerifyAspect {
 
         CommandHandler ch = (CommandHandler) pjp.getTarget();
         List<Parameter> parameterList = ch.getParameters();
-        List<String> argumentList;
+        List<String> argumentList = null;
         String rawArgument;
-
+        OsuSearchParameter osuSearchParameter = null;
         Matcher m = RegularPattern.REG_CMD_REGEX.matcher(argument.getRawMessage());
         m.find();
         //2018-4-4 17:29:41改用switch
@@ -107,19 +108,19 @@ public class ParameterVerifyAspect {
 
         //根据是否需要osu!search参数、以及是否使用Shell格式来进行分割
 
-        SearchParameter searchParameter = null;
+        SearchParameterNeeded searchParameterNeeded = null;
         Annotation[] a = pjp.getTarget().getClass().getAnnotations();
         for (Annotation aList : a) {
             if (aList.annotationType().equals(UserAuthorityControl.class)) {
-                searchParameter = (SearchParameter) aList;
+                searchParameterNeeded = (SearchParameterNeeded) aList;
             }
 
         }
 
         //如果Class上的注解不是null
-        if (searchParameter != null) {
+        if (searchParameterNeeded != null) {
             //需要osu!search参数
-            argumentList = splitSearchParameter(rawArgument);
+            osuSearchParameter = splitSearchParameter(rawArgument);
         } else {
             argumentList = splitRegularParameter(rawArgument);
         }
@@ -179,6 +180,7 @@ public class ParameterVerifyAspect {
                     }
                     break;
                 case MODE:
+                    //TODO 区别是否是搜索关键字（如果是搜索关键字，从搜索参数里取）
                     mode = convertModeStrToInteger(rawArgument);
                     if (mode == null) {
                         return String.format(TipConsts.FORMAT_ERROR, rawArgument, "osu!游戏模式");
@@ -201,49 +203,7 @@ public class ParameterVerifyAspect {
                 case ROLE:
                     argument.setRole(rawArgument);
                     break;
-                //以下为谱面搜索参数，和其他不一样
-                case ARTIST:
-                    argument.setArtist(rawArgument);
-                    break;
-                case TITIE:
-                    argument.setTitle(rawArgument);
-                    break;
-                case DIFFNAME:
-                    argument.setDiffName(rawArgument);
-                    break;
-                case MAPPER:
-                    argument.setMapper(rawArgument);
-                    break;
-                case AR:
-                    argument.setAr(Double.valueOf(rawArgument));
-                    break;
-                case OD:
-                    argument.setOd(Double.valueOf(rawArgument));
-                    break;
-                case CS:
-                    argument.setCs(Double.valueOf(rawArgument));
-                    break;
-                case HP:
-                    argument.setHp(Double.valueOf(rawArgument));
-                    break;
-                case MODS:
-                    argument.setMods(Integer.valueOf(rawArgument));
-                    break;
-                case MODS_STRING:
-                    argument.setModsString(rawArgument);
-                    break;
-                case COUNT_MISS:
-                    argument.setCountMiss(Integer.valueOf(rawArgument));
-                    break;
-                case COUNT_100:
-                    argument.setCount100(Integer.valueOf(rawArgument));
-                    break;
-                case COUNT_50:
-                    argument.setCount50(Integer.valueOf(rawArgument));
-                    break;
-                case MAXCOMBO:
-                    argument.setMaxCombo(Integer.valueOf(rawArgument));
-                    break;
+                //sudo命令 参数
                 case USERNAME_LIST:
                     //由于用户名列表是必须参数，不必加null判定（后续可选参数需要加判定）
                     String[] usernameList = rawArgument.split(",");
@@ -396,6 +356,10 @@ public class ParameterVerifyAspect {
                     ssr.setCount(Integer.valueOf(rawArgument));
                     argument.setSsr(ssr);
                     break;
+                //以下为谱面搜索参数，和其他不一样
+                case OSU_SEARCH_PARAMETER:
+                    argument.setOsuSearchParameter(osuSearchParameter);
+                    break;
                 default:
                     break;
             }
@@ -421,6 +385,12 @@ public class ParameterVerifyAspect {
         return pjp.proceed();
     }
 
+    /**
+     * 处理常规命令的方法
+     *
+     * @param rawArgument 常规参数字符串（不带命令）
+     * @return 一个大小为3的列表，包括了 a #b :c 或者a :c #b的a b c三个字符串
+     */
 
     private List<String> splitRegularParameter(String rawArgument) {
         List<String> result = new ArrayList<>(3);
@@ -477,30 +447,37 @@ public class ParameterVerifyAspect {
         }
     }
 
-    private List<String> splitSearchParameter(String rawArgument) {
-        ArrayList<String> list = new ArrayList<>(13);
+    /**
+     * 处理osu搜索参数的方法
+     * 首先处理mod字符串，然后是成绩字符串，然后是模式，最后是参数本体
+     *
+     * @param rawArgument 参数字符串，不带命令本体
+     * @return 解析好的pojo，默认mod为None，如果补齐了各种括号后依然不符合正则表达式则返回null
+     */
+
+    private OsuSearchParameter splitSearchParameter(String rawArgument) {
+        OsuSearchParameter parameter = new OsuSearchParameter();
         //改一改设计思路：参数处理和错误判断分开做
-        Integer modsNum = null;
-        String mods = "None";
         Integer mode;
         String keyword = null;
-        String scoreString = null;
+        String scoreString;
         Double ar = null;
         Double od = null;
         Double cs = null;
         Double hp = null;
         boolean keywordFound = false;
-        //先从字符串结尾的mod开始检测
+        //0. 默认的Mod设为None
+        parameter.setModsString("None");
+        //1. 从字符串结尾的mod开始检测
         Matcher getKeyWordAndMod = SearchKeywordPattern.MOD.matcher(rawArgument);
         if (getKeyWordAndMod.find()) {
             //如果包含了Mod
             keyword = getKeyWordAndMod.group(1);
             //标志找到了mod和关键字
             keywordFound = true;
-
-            mods = getKeyWordAndMod.group(2);
-            modsNum = scoreUtil.reverseConvertMod(mods);
-            ///如果字符串解析出错，会返回null，因此这里用null值来判断输入格式 TODO 这块移到命令处理器里做，或者直接废除
+            parameter.setModsString(getKeyWordAndMod.group(2));
+            //解析mod数字放到上面做
+            ///如果字符串解析出错，会返回null，因此这里用null值来判断输入格式 TODO 这块移到上面做
 //            if (modsNum == null) {
 //                cqMsg.setMessage("请使用MOD的双字母缩写，不需要任何分隔符。" +
 //                        "\n接受的Mod有：NF EZ TD HD HR SD DT HT NC FL SO PF。");
@@ -510,10 +487,13 @@ public class ParameterVerifyAspect {
             //如果检测出来就去掉
             rawArgument = keyword;
         }
-        //再检测是否指定了成绩字符串
+        //2. 再检测是否指定了成绩字符串
 
-        //兼容koohii 加默认值
-
+        //兼容koohii 加默认值（cb=-1,100 50 miss=0)
+        parameter.setMaxCombo(-1);
+        parameter.setCount50(0);
+        parameter.setCount100(0);
+        parameter.setCountMiss(0);
         getKeyWordAndMod = SearchKeywordPattern.PP_CALC.matcher(rawArgument);
         if (getKeyWordAndMod.find()) {
             if (!keywordFound) {
@@ -526,66 +506,53 @@ public class ParameterVerifyAspect {
             for (String s : scoreParams) {
                 Matcher getScoreParams = SearchKeywordPattern.KEYWORD_ACC.matcher(s);
                 if (getScoreParams.find()) {
-                    searchParam.setAcc(Double.valueOf(getScoreParams.group(1)));
+                    parameter.setAcc(Double.valueOf(getScoreParams.group(1)));
                 }
                 getScoreParams = SearchKeywordPattern.KEYWORD_COMBO.matcher(s);
                 if (getScoreParams.find()) {
-                    searchParam.setMaxCombo(Integer.valueOf(getScoreParams.group(1)));
+                    parameter.setMaxCombo(Integer.valueOf(getScoreParams.group(1)));
                 }
                 getScoreParams = SearchKeywordPattern.KEYWORD_COUNT_50.matcher(s);
                 if (getScoreParams.find()) {
-                    searchParam.setCount50(Integer.valueOf(getScoreParams.group(1)));
+                    parameter.setCount50(Integer.valueOf(getScoreParams.group(1)));
                 }
                 getScoreParams = SearchKeywordPattern.KEYWORD_COUNT_100.matcher(s);
                 if (getScoreParams.find()) {
-                    searchParam.setCount100(Integer.valueOf(getScoreParams.group(1)));
+                    parameter.setCount100(Integer.valueOf(getScoreParams.group(1)));
                 }
                 getScoreParams = SearchKeywordPattern.KEYWORD_MISS.matcher(s);
                 if (getScoreParams.find()) {
-                    searchParam.setCountMiss(Integer.valueOf(getScoreParams.group(1)));
+                    parameter.setCountMiss(Integer.valueOf(getScoreParams.group(1)));
                 }
             }
-            msg = msg.replace(scoreString, "");
-            msg = msg.replaceAll("[《<>》]", "");
+            //如果检测到了，就把检测到的内容去掉
+            rawArgument = rawArgument.replace(scoreString, "");
+            rawArgument = rawArgument.replaceAll("[《<>》]", "");
         }
-        //最后检测是否指定了模式（如果先检测，会把后面的文字也计算进去）
-        getKeyWordAndMod = SearchKeywordPattern.MODE.matcher(msg);
+        //3. 最后检测是否指定了模式（如果先检测，会把后面的文字也计算进去）
+        getKeyWordAndMod = SearchKeywordPattern.MODE.matcher(rawArgument);
         if (getKeyWordAndMod.find()) {
             keyword = getKeyWordAndMod.group(2);
             keywordFound = true;
             mode = convertModeStrToInteger(getKeyWordAndMod.group(3));
-            if (mode == null) {
-                logger.debug(getKeyWordAndMod.group(3));
-                cqMsg.setMessage(String.format(TipConsts.FORMAT_ERROR, getKeyWordAndMod.group(3), "osu!游戏模式"));
-                cqManager.sendMsg(cqMsg);
-                return null;
-            }
-            argument.setMode(mode);
+            parameter.setMode(mode);
         } else {
-            argument.setMode(0);
+            parameter.setMode(0);
         }
 
-
+        //4. 这种情况，既没有指定模式也没有指定mod也没有指定成绩，那所有的文本都是关键词
         if (!keywordFound) {
-            //这种情况，三个参数都没有指定
-            Matcher m = RegularPattern.REG_CMD_REGEX.matcher(msg);
-            m.find();
-            if ("sudo".equals(argument.getSubCommandLowCase())) {
-                m = RegularPattern.ADMIN_CMD_REGEX.matcher(msg);
-                m.find();
-            }
-            keyword = m.group(2);
+            keyword = rawArgument;
         }
 
-        //如果mode不是主模式，而且命令是search
-        if (!argument.getMode().equals(0) && "search".equals(argument.getSubCommandLowCase())) {
-            cqMsg.setMessage("由于oppai不支持其他模式，因此白菜也只有主模式支持!search命令。");
-            cqManager.sendMsg(cqMsg);
-            return null;
-        }
+        //TODO 这块也移到命令处理器里做 如果mode不是主模式，而且命令是search
+//        if (!argument.getMode().equals(0) && "search".equals(argument.getSubCommandLowCase())) {
+//            cqMsg.setMessage("由于oppai不支持其他模式，因此白菜也只有主模式支持!search命令。");
+//            cqManager.sendMsg(cqMsg);
+//            return null;
+//        }
 
-        searchParam.setMods(modsNum);
-        searchParam.setModsString(mods);
+//        searchParam.setMods(modsNum);
 
 
         if (keyword.endsWith(" ")) {
@@ -593,8 +560,8 @@ public class ParameterVerifyAspect {
         }
         Matcher allNumberKeyword = SearchKeywordPattern.ALL_NUMBER_SEARCH_KEYWORD.matcher(keyword);
         if (allNumberKeyword.find()) {
-            searchParam.setBeatmapId(Integer.valueOf(allNumberKeyword.group(1)));
-            return searchParam;
+            parameter.setBeatmapId(Integer.valueOf(allNumberKeyword.group(1)));
+            return parameter;
         }
         //新格式(咕)
 
@@ -619,9 +586,10 @@ public class ParameterVerifyAspect {
         }
         Matcher getArtistTitleEtc = SearchKeywordPattern.KETWORD.matcher(keyword);
         if (!getArtistTitleEtc.find()) {
-            cqMsg.setMessage("搜索格式：艺术家-歌曲标题[难度名](麻婆名){AR9.0OD9.0CS9.0HP9.0}:osu!std<98acc 1x100 2x50 3xmiss 4cb> +MOD双字母简称。\n" +
-                    "所有参数都可以省略(但横线、方括号和圆括号不能省略)，方括号 圆括号和四维的小数点支持全/半角；四维顺序必须按AR OD CS HP排列。");
-            cqManager.sendMsg(cqMsg);
+            //TODO 直接返回null，解耦逻辑
+//            cqMsg.setMessage("搜索格式：艺术家-歌曲标题[难度名](麻婆名){AR9.0OD9.0CS9.0HP9.0}:osu!std<98acc 1x100 2x50 3xmiss 4cb> +MOD双字母简称。\n" +
+//                    "所有参数都可以省略(但横线、方括号和圆括号不能省略)，方括号 圆括号和四维的小数点支持全/半角；四维顺序必须按AR OD CS HP排列。");
+//            cqManager.sendMsg(cqMsg);
             return null;
         } else {
             //没啥办法……手动处理吧，这个正则管不了了，去掉可能存在的空格
@@ -636,10 +604,10 @@ public class ParameterVerifyAspect {
             if (title.endsWith(" ")) {
                 title = title.substring(0, title.length() - 1);
             }
-            searchParam.setArtist(artist);
-            searchParam.setTitle(title);
-            searchParam.setDiffName(getArtistTitleEtc.group(3));
-            searchParam.setMapper(getArtistTitleEtc.group(4));
+            parameter.setArtist(artist);
+            parameter.setTitle(title);
+            parameter.setDiffName(getArtistTitleEtc.group(3));
+            parameter.setMapper(getArtistTitleEtc.group(4));
             //处理四维字符串
             String fourDimensions = getArtistTitleEtc.group(5);
             if (!"".equals(fourDimensions)) {
@@ -659,11 +627,11 @@ public class ParameterVerifyAspect {
                 }
 
             }
-            searchParam.setAr(ar);
-            searchParam.setOd(od);
-            searchParam.setCs(cs);
-            searchParam.setHp(hp);
-            return searchParam;
+            parameter.setAr(ar);
+            parameter.setOd(od);
+            parameter.setCs(cs);
+            parameter.setHp(hp);
+            return parameter;
         }
     }
 

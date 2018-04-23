@@ -63,18 +63,23 @@ public class MsgQueue {
      */
     public void addMsg(CqMsg msg) {
         //循环队列的具体实现
-        //首先长度增加
+        //首先队列长度增加
         len++;
-        //如果0-100都有了消息，那就把start右移一个
+        //如果队列长度大于等于数组长度了
         if (len >= N) {
+            //把当前长度值锁死在数组大小
             len = N;
+            //把起始点右移
             start++;
         }
-        //如果end已经达到数组最右端，就移到最左端
+        //如果end已经达到数组最右端
         if (end == N) {
+            //把结束点归零
             end = 0;
         }
+        //如果起始点达到最右端
         if (start == N) {
+            //把起始点归零
             start = 0;
         }
         //把消息存到结束坐标里
@@ -83,7 +88,6 @@ public class MsgQueue {
         this.msg = msg;
         //结束坐标+1
         end++;
-
     }
     /**
      * 把消息列表转为ArrayList……当时为啥要写这个方法来着？
@@ -125,18 +129,18 @@ public class MsgQueue {
         ArrayList<CqMsg> result = new ArrayList<>();
         if (start < end) {
             for (int i = 0; i < end; i++) {
-                if (QQ.equals(msgs[i].getUserId())) {
+                if (QQ.equals(msgs[i].getQQ())) {
                     result.add(msgs[i]);
                 }
             }
         } else {
             for (int i = end; i < msgs.length; i++) {
-                if (QQ.equals(msgs[i].getUserId())) {
+                if (QQ.equals(msgs[i].getQQ())) {
                     result.add(msgs[i]);
                 }
             }
             for (int i = 0; i < start - 1; i++) {
-                if (QQ.equals(msgs[i].getUserId())) {
+                if (QQ.equals(msgs[i].getQQ())) {
                     result.add(msgs[i]);
                 }
             }

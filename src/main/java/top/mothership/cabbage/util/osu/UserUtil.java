@@ -99,6 +99,23 @@ public class UserUtil {
         return roles;
     }
 
+    public PlayerInfo tryFixBannedUserName(User user, PlayerInfo playerInfo) {
+        if (user.getCurrentUname() != null) {
+            playerInfo.setUserName(user.getCurrentUname());
+        } else {
+            List<String> list = new GsonBuilder().create().fromJson(user.getLegacyUname(), new TypeToken<List<String>>() {
+            }.getType());
+            if (list.size() > 0) {
+                playerInfo.setUserName(list.get(0));
+            } else {
+                playerInfo.setUserName(String.valueOf(user.getUserId()));
+            }
+        }
+
+
+    }
+
+
     public User addRole(String role, User user) {
         String newRole;
         //如果当前的用户组是creep，就直接改成现有的组

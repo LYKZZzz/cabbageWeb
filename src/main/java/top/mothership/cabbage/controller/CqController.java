@@ -2,7 +2,6 @@ package top.mothership.cabbage.controller;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -16,7 +15,9 @@ import top.mothership.cabbage.pattern.CQCodePattern;
 import top.mothership.cabbage.pattern.RegularPattern;
 import top.mothership.cabbage.pojo.coolq.Argument;
 import top.mothership.cabbage.pojo.coolq.CqMsg;
-import top.mothership.cabbage.service.*;
+import top.mothership.cabbage.service.CommandHandler;
+import top.mothership.cabbage.service.CqAdminServiceImpl;
+import top.mothership.cabbage.service.CqServiceImpl;
 import top.mothership.cabbage.util.qq.SmokeUtil;
 
 import javax.annotation.PostConstruct;
@@ -34,37 +35,20 @@ public class CqController {
     private final CqServiceImpl cqService;
     private final SmokeUtil smokeUtil;
     private final CqAdminServiceImpl cqAdminService;
-    private final MpServiceImpl mpService;
     private final CqManager cqManager;
-    private final AnalyzeServiceImpl analyzeService;
     private final DayLilyManager dayLilyManager;
-    private final ShadowSocksCmdServiceImpl shadowSocksCmdService;
+
 
     private Logger logger = LogManager.getLogger(this.getClass());
 
-    /**
-     * Spring构造方法自动注入
-     *
-     * @param cqService             Service层
-     * @param smokeUtil             负责禁言的工具类
-     * @param cqAdminService
-     * @param mpService
-     * @param cqManager
-     * @param analyzeService
-     * @param dayLilyManager
-     * @param shadowSocksCmdService
-     */
-    @Autowired
-    public CqController(CqServiceImpl cqService, SmokeUtil smokeUtil, CqAdminServiceImpl cqAdminService, MpServiceImpl mpService, CqManager cqManager, AnalyzeServiceImpl analyzeService, DayLilyManager dayLilyManager, ShadowSocksCmdServiceImpl shadowSocksCmdService) {
+    public CqController(CqServiceImpl cqService, SmokeUtil smokeUtil, CqAdminServiceImpl cqAdminService, CqManager cqManager, DayLilyManager dayLilyManager) {
         this.cqService = cqService;
         this.smokeUtil = smokeUtil;
         this.cqAdminService = cqAdminService;
-        this.mpService = mpService;
         this.cqManager = cqManager;
-        this.analyzeService = analyzeService;
         this.dayLilyManager = dayLilyManager;
-        this.shadowSocksCmdService = shadowSocksCmdService;
     }
+
 
     /**
      * Controller主方法
@@ -74,6 +58,7 @@ public class CqController {
      */
     @RequestMapping(value = "/cqAPI", method = RequestMethod.POST, produces = "application/json;charset=UTF-8")
     public void cqMsgParse(@RequestBody CqMsg cqMsg) throws Exception {
+        String returnMsg = null;
         Argument argument = new Argument();
         //标记为QQ消息
         argument.setMessageSource(MessageSource.QQ);
@@ -123,20 +108,27 @@ public class CqController {
                                 CommandHandler ch =
                                         CommandHandlerFactory.build(
                                                 CommandIdentifier.valueOf((cmdMatcher.group(1) + "_" + cmdMatcher.group(2)).toUpperCase()));
-                                ch.doService(argument);
+                                returnMsg = ch.doService(argument);
+                                //发送执行结果
+                                cqMsg.setMessage(returnMsg);
+                                cqManager.sendMsg(cqMsg);
                             }
                             break;
                         default:
                             Matcher recentQianeseMatcher = RegularPattern.QIANESE_RECENT.matcher(cmdMatcher.group(1).toLowerCase(Locale.CHINA));
                             if (recentQianeseMatcher.find()) {
                                 CommandHandler ch = CommandHandlerFactory.build(CommandIdentifier.RECENT);
-                                ch.doService(argument);
+                                returnMsg = ch.doService(argument);
+                                cqMsg.setMessage(returnMsg);
+                                cqManager.sendMsg(cqMsg);
                             } else {
                                 //检测白菜是否能处理这条命令
                                 if (CommandIdentifier.contains(cmdMatcher.group(1).toUpperCase())) {
                                     CommandHandler ch = CommandHandlerFactory.build(
                                             CommandIdentifier.valueOf(cmdMatcher.group(1).toUpperCase()));
-                                    ch.doService(argument);
+                                    returnMsg = ch.doService(argument);
+                                    cqMsg.setMessage(returnMsg);
+                                    cqManager.sendMsg(cqMsg);
                                 } else {
                                     //如果找不到对应的处理方法
                                     Matcher sleepMatcher = RegularPattern.SLEEP_REGEX.matcher(msgWithoutImage);

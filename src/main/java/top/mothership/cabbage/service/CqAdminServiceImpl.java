@@ -346,29 +346,29 @@ public class CqAdminServiceImpl {
     public void smoke(CqMsg cqMsg) {
         //开放给树姐
         Argument argument = cqMsg.getArgument();
-        if (argument.getQq().equals(-1L)) {
+        if (argument.getQQ().equals(-1L)) {
             List<DogGroupMember> memberList = cqManager.getGroupMembers(cqMsg.getGroupId()).getData();
             cqMsg.setMessageType("smoke");
             cqMsg.setDuration(argument.getSecond());
-            String operator = cqMsg.getUserId().toString();
+            String operator = cqMsg.getQQ().toString();
             for (DogGroupMember aList : memberList) {
-                cqMsg.setUserId(aList.getUserId());
+                cqMsg.setQQ(aList.getQQ());
                 cqManager.sendMsg(cqMsg);
-                logger.info(aList.getUserId() + "被" + operator + "禁言" + argument.getSecond() + "秒。");
+                logger.info(aList.getQQ() + "被" + operator + "禁言" + argument.getSecond() + "秒。");
             }
             String img = imgUtil.drawImage(ImgUtil.images.get("smokeAll.png"));
             cqMsg.setMessage("[CQ:image,file=base64://" + img + "]");
             cqMsg.setMessageType("group");
             cqManager.sendMsg(cqMsg);
         } else {
-            logger.info(argument.getQq() + "被" + cqMsg.getUserId() + "禁言" + argument.getSecond() + "秒。");
+            logger.info(argument.getQQ() + "被" + cqMsg.getQQ() + "禁言" + argument.getSecond() + "秒。");
             if (argument.getSecond() > 0) {
                 cqMsg.setMessage("[CQ:record,file=base64://" + Base64.getEncoder().encodeToString((byte[]) resDAO.getResource("all_dead.wav")) + "]");
                 cqManager.sendMsg(cqMsg);
             }
             cqMsg.setMessageType("smoke");
             cqMsg.setDuration(argument.getSecond());
-            cqMsg.setUserId(argument.getQq());
+            cqMsg.setQQ(argument.getQQ());
             cqManager.sendMsg(cqMsg);
         }
     }
@@ -413,18 +413,18 @@ public class CqAdminServiceImpl {
                 }
             }
             CqMsg cqMsg1 = new CqMsg();
-            cqMsg1.setMessage("Flag为：" + argument.getFlag() + "的邀请被" + cqMsg.getUserId() + "通过");
+            cqMsg1.setMessage("Flag为：" + argument.getFlag() + "的邀请被" + cqMsg.getQQ() + "通过");
             cqMsg1.setMessageType("private");
             for (long l : OverallConsts.ADMIN_LIST) {
-                cqMsg1.setUserId(l);
+                cqMsg1.setQQ(l);
                 cqManager.sendMsg(cqMsg1);
             }
         } else {
             cqMsg.setMessage("通过Flag为：" + argument.getFlag() + "的邀请失败，返回信息：" + cqHttpApiGenericResponse);
             cqManager.sendMsg(cqMsg);
-            cqMsg.setMessage("通过Flag为：" + argument.getFlag() + "的邀请失败，操作人：" + cqMsg.getUserId() + "，返回信息：" + cqHttpApiGenericResponse);
+            cqMsg.setMessage("通过Flag为：" + argument.getFlag() + "的邀请失败，操作人：" + cqMsg.getQQ() + "，返回信息：" + cqHttpApiGenericResponse);
             cqMsg.setMessageType("private");
-            cqMsg.setUserId(1335734657L);
+            cqMsg.setQQ(1335734657L);
             cqManager.sendMsg(cqMsg);
         }
     }
@@ -442,13 +442,13 @@ public class CqAdminServiceImpl {
         User user = userDAO.getUser(null, userFromAPI.getUserId());
         if (user == null) {
             resp = "玩家" + userFromAPI.getUserName() + "没有使用过白菜，已完成注册";
-            userUtil.registerUser(userFromAPI.getUserId(), 0, argument.getQq(), argument.getRole());
+            userUtil.registerUser(userFromAPI.getUserId(), 0, argument.getQQ(), argument.getRole());
         } else {
             resp = "更新前的QQ：" + user.getQq() + "，更新前的用户组：" + user.getRole();
-            user.setQq(argument.getQq());
+            user.setQQ(argument.getQQ());
             user.setRole(argument.getRole());
-            if (argument.getQq() != null) {
-                resp += "\n更新后的QQ：" + argument.getQq();
+            if (argument.getQQ() != null) {
+                resp += "\n更新后的QQ：" + argument.getQQ();
             }
             if (argument.getRole() != null) {
                 resp += "\n更新后的用户组：" + argument.getRole();
@@ -645,7 +645,7 @@ public class CqAdminServiceImpl {
 
     public void unbind(CqMsg cqMsg) {
         Argument argument = cqMsg.getArgument();
-        Long qq = argument.getQq();
+        Long qq = argument.getQQ();
         User user = userDAO.getUser(qq, null);
         if (user == null) {
             cqMsg.setMessage("该QQ没有绑定用户……");
@@ -698,9 +698,9 @@ public class CqAdminServiceImpl {
         //这里是存引用……所以后面返回是null
         request.put(cqMsg, "否");
         CqMsg cqMsg1 = new CqMsg();
-        User user = userDAO.getUser(cqMsg.getUserId(), null);
+        User user = userDAO.getUser(cqMsg.getQQ(), null);
         cqMsg1.setMessage("有新的拉群邀请，请注意查收：" + "Flag：" + cqMsg.getFlag() + "，群号：" + cqMsg.getGroupId()
-                + "，邀请人：" + cqMsg.getUserId() + "，根据邀请人QQ在白菜数据库中的查询结果：" + user);
+                + "，邀请人：" + cqMsg.getQQ() + "，根据邀请人QQ在白菜数据库中的查询结果：" + user);
         cqMsg1.setMessageType("private");
         for (long i : OverallConsts.ADMIN_LIST) {
             //debug 这里设置的user id 应该是cqMsg1的，之前漏了个1
